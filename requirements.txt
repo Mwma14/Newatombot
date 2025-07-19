@@ -3,4 +3,3 @@ aiosqlite
 colorlog
 python-telegram-bot
 flask
-telegram
