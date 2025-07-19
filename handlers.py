@@ -382,4 +382,3 @@ async def my_orders_start(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
 async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE):
     logger.error(f"🚨 Exception while handling an update: {context.error}", exc_info=context.error)
-```

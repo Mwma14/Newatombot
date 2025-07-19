@@ -4,6 +4,7 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 import database as db
 import config
 import translations
+import translations
 import ui_config
 from products import calculate_credit_cost
 
@@ -148,4 +149,4 @@ def get_payment_method_keyboard(price: int, lang: str = 'en') -> InlineKeyboardM
     ])
 
 def get_cancel_flow_keyboard(lang: str = 'en') -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup([[InlineKeyboardButton(locale.get_text('cancel_button', lang), callback_data='cancel_flow')]])
+    return InlineKeyboardMarkup([[InlineKeyboardButton(translations.get_text('cancel_button', lang), callback_data='cancel_flow')]])n', lang), callback_data='cancel_flow')]])
