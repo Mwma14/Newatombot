@@ -27,22 +27,33 @@ def run_async(coro):
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    if 'user_id' in session:
+        return redirect(url_for('dashboard'))
+    return redirect(url_for('login'))
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    if 'user_id' in session:
+        return redirect(url_for('dashboard'))
+        
     if request.method == 'POST':
         user_id = request.form.get('user_id')
+        if not user_id:
+            return render_template('login.html', error='Please enter your Telegram User ID')
         try:
             user_id = int(user_id)
             user_data = run_async(db.get_user_data(user_id))
+            if user_data['credits'] == 0 and not user_data['is_banned']:
+                # New user, initialize with default credits
+                run_async(db.change_user_credits(user_id, 0))
             session['user_id'] = user_id
             session['user_data'] = user_data
             return redirect(url_for('dashboard'))
         except ValueError:
-            return render_template('login.html', error='Invalid User ID')
+            return render_template('login.html', error='Please enter a valid numeric User ID')
         except Exception as e:
-            return render_template('login.html', error=f'Error: {str(e)}')
+            logger.error(f"Login error for user {user_id}: {e}")
+            return render_template('login.html', error='Login failed. Please check your User ID.')
     
     return render_template('login.html')
 
