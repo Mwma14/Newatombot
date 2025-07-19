@@ -2,3 +2,4 @@
 aiosqlite
 colorlog
 telegram
+flask
