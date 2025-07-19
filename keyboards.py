@@ -3,7 +3,7 @@ import math
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 import database as db
 import config
-import locale
+import translations
 import ui_config
 from products import calculate_credit_cost
 

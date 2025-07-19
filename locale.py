@@ -1,8 +1,8 @@
-# locale.py
+# translations.py
 
 # This dictionary holds all the text for the bot.
 # All special Markdown characters (*, _, etc.) have been removed, except for ``.
-LANG = {
+TRANSLATIONS = {
     'en': {
         'welcome': "👋 Welcome, {name}!\n\n👤 User ID: `{user_id}`\n💰 Your Credits: {credits:.2f} C\n\n"
                    "Please choose an option from the menu below:",
@@ -14,52 +14,69 @@ LANG = {
         'back_button': "Back",
         'cancel_button': "❌ Cancel",
         'operation_cancelled': "❌ Operation cancelled.",
-        'insufficient_credits': "❌ Insufficient Credits!",
-        'session_expired': "⚠️ Your session has expired. Please start the action again.",
-        'select_operator': "Please select an operator:",
-        'select_category': "You selected {operator}. Please choose a product category:",
-        'select_product': "{operator} - {category}\nSelect a product to purchase.",
-        'beautiful_numbers_title': "{operator} - Beautiful Numbers\nSelect a number to purchase.",
-        'bnum_instructions_button': "ℹ️ How to Buy (Instructions)",
-        'confirm_purchase_title': "Confirm Purchase\n\nItem: {name}\nOperator: {operator}\n"
-                                  "Cost: {cost:.2f} Credits\n\n",
-        'proceed_prompt': "Confirm Purchase",
-        'credit_low_prompt': "Credit Balance Too Low\n\nYou need {needed:.2f} C but only have {has:.2f} C."
-                             "\n\nPlease buy more credits to proceed.",
-        'ask_phone_number': "📱 Enter Phone Number\n\nYou are ordering: `{name}`\nCost: `{cost:.2f}` Credits\n\n"
-                            "Please send the phone number to receive the product (e.g., 09...).",
-        'order_submitted': "✅ Order Submitted!\n\nOrder ID: `{order_id}`\nItem: {name}\n"
-                           "Cost: {cost:.2f} Credits\n{delivery_info}\n\nAn admin will process your order shortly.",
-        'delivery_to_phone': "To Phone: `{phone}`",
-        'delivery_bnum': "Delivery: Contact admin per instructions.",
-        'buy_credits_prompt': "💰 Buy Credits\n\nThe rate is 100 MMK = 1 Credit.\n\n"
-                              "Please select a package or enter a manual amount.",
-        'manual_amount_button': "✍️ Enter Manual Amount",
-        'ask_manual_amount': "Please enter the amount in MMK you wish to deposit.\n(e.g., `2000`)",
-        'min_amount_prompt': "Minimum amount is 500 MMK. Please try again.",
-        'invalid_amount_prompt': "Invalid amount. Please send a number only.",
-        'package_choice_prompt': "You've selected the package for {price:,} MMK.\nPlease choose a payment method:",
-        'manual_choice_prompt': "You've chosen to deposit {price:,} MMK.\nPlease choose a payment method:",
-        'payment_instructions': "Payment Instructions\n\nOrder ID: `{order_id}`\nAmount to Pay: {price:,} MMK\n"
-                                "Credits to Receive: {credits:.2f} C\n\n1. Send the exact amount to `{number}` "
-                                "via {method}.\n2. Take a screenshot of the successful transaction receipt.\n"
-                                "3. Send that screenshot back to me in this chat.",
-        'payment_submitted': "✅ Payment Submitted! Your payment is now under review by an admin. "
-                             "You will be notified upon approval.",
-        'my_orders_title': "📋 My Orders\n",
-        'pending_orders_header': "\n⏳ Pending Orders\n" + "—"*20 + "\n",
-        'history_orders_header': "\n📖 Order History\n" + "—"*20 + "\n",
-        'no_orders': "\nYou have no orders.",
-        'order_line': "`{order_id}`\n  `{pkg}` ({status})\n  Cost: {cost:.2f} C | {date}\n\n",
-        'bnum_instructions_text': """
-Beautiful Number Purchase Guide
+        'insufficient_credits': "💳 Insufficient Credits! Please buy credits first.",
+        'credits_menu_title': "💰 Buy Credits",
+        'credits_manual_button': "✏️ Enter Manually",
+        'credits_manual_prompt': "Enter credit amount in MMK (minimum 100 MMK):",
+        'credits_invalid_amount': "❌ Invalid amount.",
+        'credits_amount_too_small': "❌ Minimum amount is 100 MMK.",
+        'credits_payment_method': "💳 Select payment method:",
+        'credits_payment_kbz': "💙 KBZ Pay",
+        'credits_payment_wave': "💜 Wave Pay",
+        'credits_payment_back': "🔙 Back",
+        'credits_payment_instructions': """
+💳 **Payment Instructions**
 
-You are buying a special phone number. The process is as follows:
-1. Complete the purchase using your credits in this bot.
-2. Your order will be sent to our admin team.
-3. Contact our admin directly on Telegram to arrange delivery.
-4. Admin Account: @CEO_METAVERSE
-5. Tell the admin your Order ID (which you'll receive after purchase) and your delivery location. The number SIM will be sent to you via a delivery service.
+**Credit:** {credits:.2f} C ({price:,} MMK)
+**Method:** {method}
+**Account:** `{account}`
+
+**How to:**
+1. Send {price:,} MMK to the account above
+2. Send payment screenshot
+3. Credits will be added automatically
+
+📸 Send the screenshot now:
+""",
+        'credits_screenshot_received': "📸 Screenshot received. Your credit purchase will be reviewed by admins.",
+        'shop_title': "🛍️ **Products**\n\nSelect operator:",
+        'shop_category_title': "📁 **{operator}** Categories\n\nSelect category:",
+        'shop_product_list_title': "📦 **{operator} - {category}**",
+        'shop_product_button': "{name} ({credits:.1f} C)",
+        'shop_bnum_info_button': "ℹ️ Beautiful Number Guide",
+        'shop_confirm_title': "🛒 **Confirmation**",
+        'shop_confirm_text': """
+**Item:** {name}
+**Price:** {credits:.2f} C ({price:,} MMK)
+**Your Credits:** {user_credits:.2f} C
+
+Confirm purchase?
+""",
+        'shop_buy_button': "✅ Buy",
+        'shop_phone_prompt': "📱 Enter your phone number:",
+        'shop_phone_invalid': "❌ Invalid phone number.",
+        'shop_purchase_success': "🎉 **Success!**\n\nOrder ID: `{order_id}`\n{credits:.2f} C has been deducted.\n\nYour order will be processed by admins.",
+        'orders_title': "📋 **My Orders**",
+        'orders_pending_title': "⏳ **Pending Orders**",
+        'orders_history_title': "📜 **Order History**",
+        'orders_no_pending': "No pending orders.",
+        'orders_no_history': "No order history.",
+        'orders_item_format': "`{order_id}`\n📦 {package}\n💰 {cost:.2f} C | {status}\n📅 {timestamp}\n",
+        'language_selection': "🌐 **Select Language:**",
+        'language_changed': "✅ Language changed to English.",
+        'force_join_message': "🔒 Please join the channel to use this bot:\n\n{channel}",
+        'force_join_button': "✅ Check",
+        'not_member_error': "❌ You are not a member of the channel. Please join and check again.",
+        'bnum_instructions_text': """
+📱 **Beautiful Number Purchase Guide**
+
+You are buying a special phone number. The process is:
+
+1. Complete the purchase in this bot with your credits
+2. Your order will be sent to our admin team
+3. Contact our admin directly on Telegram for delivery arrangements
+4. Admin account: @CEO_METAVERSE
+5. Tell the admin your Order ID (received after purchase) and delivery address. The SIM will be delivered.
 """
     },
     'my': {
@@ -72,58 +89,82 @@ You are buying a special phone number. The process is as follows:
         'main_menu_button_language': "🌐 Language / ဘာသာစကား",
         'back_button': "နောက်သို့",
         'cancel_button': "❌ ပယ်ဖျက်မည်",
-        'operation_cancelled': "❌ လုပ်ဆောင်မှုအား ပယ်ဖျက်လိုက်ပါသည်။",
-        'insufficient_credits': "❌ Credit မလုံလောက်ပါ။",
-        'session_expired': "⚠️ လုပ်ဆောင်မှုအချိန် ကျော်လွန်သွားပါသဖြင့် အစမှပြန်လည် စတင်ပါ။",
-        'select_operator': "ကျေးဇူးပြု၍ Operator တစ်ခု ရွေးချယ်ပါ:",
-        'select_category': "{operator} ကို ရွေးထားပါသည်။ ကျေးဇူးပြု၍ အမျိုးအစားတစ်ခု ရွေးပါ:",
-        'select_product': "{operator} - {category}\nဝယ်ယူရန် ပစ္စည်းတစ်ခု ရွေးချယ်ပါ:",
-        'beautiful_numbers_title': "{operator} - နံပါတ်လှများ\nဝယ်ယူရန် နံပါတ်တစ်ခု ရွေးချယ်ပါ:",
-        'bnum_instructions_button': "ℹ️ ဝယ်ယူရန် လမ်းညွှန်",
-        'confirm_purchase_title': "ဝယ်ယူမှုအား အတည်ပြုပါ\n\nပစ္စည်း: {name}\nOperator: {operator}\n"
-                                  "ကုန်ကျစရိတ်: {cost:.2f} Credits\n\n",
-        'proceed_prompt': "ဝယ်ယူမှုအား အတည်ပြုပါ",
-        'credit_low_prompt': "Credit လက်ကျန် နည်းနေပါသည်\n\nလိုအပ်သော Credit: {needed:.2f} C\n"
-                             "သင့်လက်ကျန်: {has:.2f} C\n\nကျေးဇူးပြု၍ Credit ထပ်မံဖြည့်တင်းပါ။",
-        'ask_phone_number': "📱 ဖုန်းနံပါတ် ထည့်ပါ\n\nသင်ဝယ်ယူသော ပစ္စည်း: `{name}`\nကုန်ကျငွေ: `{cost:.2f}` Credits\n\n"
-                            "ပစ္စည်းလက်ခံမည့် ဖုန်းနံပါတ်အား ထည့်ပေးပါ (ဥပမာ 09...).",
-        'order_submitted': "✅ Order တင်ပြီးပါပြီ!\n\nOrder ID: `{order_id}`\nပစ္စည်း: {name}\n"
-                           "ကုန်ကျငွေ: {cost:.2f} Credits\n{delivery_info}\n\nAdmin မှ မကြာမီ ဆောင်ရွက်ပေးပါမည်။",
-        'delivery_to_phone': "ပို့ရန်ဖုန်း: `{phone}`",
-        'delivery_bnum': "ပို့ဆောင်ရန်: လမ်းညွှန်အတိုင်း Admin ကိုဆက်သွယ်ပါ။",
-        'buy_credits_prompt': "💰 Credit ဝယ်ယူရန်\n\nနှုန်းထားမှာ 100 MMK = 1 Credit ဖြစ်ပါသည်။\n\n"
-                              "Package တစ်ခုရွေးပါ သို့မဟုတ် ပမာဏ ကိုယ်တိုင်ရိုက်ထည့်ပါ။",
-        'manual_amount_button': "✍️ ပမာဏ ကိုယ်တိုင်ရိုက်ထည့်ရန်",
-        'ask_manual_amount': "သင်ဖြည့်လိုသော ပမာဏကို MMK ဖြင့် ရိုက်ထည့်ပါ\n(ဥပမာ `2000`)",
-        'min_amount_prompt': "အနည်းဆုံး 500 MMK ဖြည့်ရပါမည်။",
-        'invalid_amount_prompt': "ပမာဏ မှားယွင်းနေပါသည်။ ဂဏန်း သီးသန့်သာ ရိုက်ထည့်ပါ။",
-        'package_choice_prompt': "{price:,} MMK တန် Package ကို ရွေးချယ်ထားပါသည်။\nငွေပေးချေမှုနည်းလမ်း ရွေးချယ်ပါ။",
-        'manual_choice_prompt': "{price:,} MMK ဖြည့်ရန် ရွေးချယ်ထားပါသည်။\nငွေပေးချေမှုနည်းလမ်း ရွေးချယ်ပါ။",
-        'payment_instructions': "ငွေပေးချေရန် လမ်းညွှန်\n\nOrder ID: `{order_id}`\nပေးချေရမည့် ပမာဏ: {price:,} MMK\n"
-                                "ရရှိမည့် Credit: {credits:.2f} C\n\n၁။ `{number}` သို့ {method} မှတစ်ဆင့် ငွေအတိအကျ လွှဲပေးပါ။\n"
-                                "၂။ ငွေလွှဲအောင်မြင်သော ဘောင်ချာကို Screenshot ရိုက်ပါ။\n"
-                                "၃။ ထို Screenshot ကို ဤနေရာတွင် ပြန်လည်ပေးပို့ပါ။",
-        'payment_submitted': "✅ ငွေပေးချေမှု တင်သွင်းပြီးပါပြီ! Admin မှ စစ်ဆေးပြီးပါက သင့်အား အကြောင်းကြားပါမည်။",
-        'my_orders_title': "📋 ကျွန်ုပ်၏ Orders\n",
-        'pending_orders_header': "\n⏳ ဆောင်ရွက်ဆဲ Orders\n" + "—"*20 + "\n",
-        'history_orders_header': "\n📖 ပြီးခဲ့သော Orders\n" + "—"*20 + "\n",
-        'no_orders': "\nသင့်တွင် Order တစ်ခုမှ မရှိသေးပါ။",
-        'order_line': "`{order_id}`\n  `{pkg}` ({status})\n  ကုန်ကျငွေ: {cost:.2f} C | {date}\n\n",
-        'bnum_instructions_text': """
-နံပါတ်လှ ဝယ်ယူခြင်း လမ်းညွှန်
+        'operation_cancelled': "❌ လုပ်ဆောင်မှုအား ပယ်ဖျက်လိုက်ပါပြီ။",
+        'insufficient_credits': "💳 Credit မလုံလောက်ပါ။ ကျေးဇူးပြု၍ ဦးစွာ Credit ဝယ်ယူပါ။",
+        'credits_menu_title': "💰 Credit ဝယ်ယူမည်",
+        'credits_manual_button': "✏️ ကိုယ်တိုင်ရိုက်ထည့်မည်",
+        'credits_manual_prompt': "Credit ပမာဏအား MMK ဖြင့် ရိုက်ထည့်ပါ (အနည်းဆုံး 100 MMK):",
+        'credits_invalid_amount': "❌ မမှန်ကန်သော ပမာဏဖြစ်ပါသည်။",
+        'credits_amount_too_small': "❌ အနည်းဆုံး 100 MMK ဖြစ်ရပါမည်။",
+        'credits_payment_method': "💳 ငွေပေးချေမှုနည်းလမ်း ရွေးချယ်ပါ:",
+        'credits_payment_kbz': "💙 KBZ Pay",
+        'credits_payment_wave': "💜 Wave Pay",
+        'credits_payment_back': "🔙 နောက်သို့",
+        'credits_payment_instructions': """
+💳 **ငွေပေးချေမှု လမ်းညွှန်**
 
-သင်သည် အထူးဖုန်းနံပါတ်တစ်ခုကို ဝယ်ယူနေပါသည်။ လုပ်ငန်းစဉ်မှာ အောက်ပါအတိုင်း ဖြစ်သည်-
-၁။ ဤဘော့တ်တွင် သင့် credit များဖြင့် ဝယ်ယူမှုကို အပြီးသတ်ပါ။
-၂။ သင်၏ Order ကို ကျွန်ုပ်တို့၏ admin အဖွဲ့ထံ ပေးပို့ပါမည်။
-၃။ ပစ္စည်းပို့ဆောင်ရန် ကျွန်ုပ်တို့၏ admin ကို Telegram မှ တိုက်ရိုက် ဆက်သွယ်ပါ။
-၄။ Admin Account: @CEO_METAVERSE
-၅။ admin အား သင်၏ Order ID (ဝယ်ယူပြီးနောက် သင်ရရှိမည့်) နှင့် ပို့ဆောင်ပေးရမည့် လိပ်စာကို ပြောပြပါ။ နံပါတ် SIM ကတ်ကို ပို့ဆောင်ရေးဝန်ဆောင်မှုဖြင့် သင့်ထံ ပေးပို့ပါမည်။
+**Credit:** {credits:.2f} C ({price:,} MMK)
+**နည်းလမ်း:** {method}
+**အကောင့်:** `{account}`
+
+**လုပ်ဆောင်ပုံ:**
+1. အထက်ပါ အကောင့်သို့ {price:,} MMK ပို့ပါ
+2. ငွေပေးချေမှု screenshot အား ပေးပို့ပါ
+3. သင့်အား Credit များ အလိုအလျောက် ထည့်သွင်းပေးပါမည်
+
+📸 ယခု screenshot ပေးပို့ပါ:
+""",
+        'credits_screenshot_received': "📸 Screenshot ရရှိပါပြီ။ သင့် Credit ဝယ်ယူမှုအား Admin များမှ စစ်ဆေးပေးပါမည်။",
+        'shop_title': "🛍️ **ပစ္စည်းများ**\n\nOperator ရွေးချယ်ပါ:",
+        'shop_category_title': "📁 **{operator}** Categories\n\nCategory ရွေးချယ်ပါ:",
+        'shop_product_list_title': "📦 **{operator} - {category}**",
+        'shop_product_button': "{name} ({credits:.1f} C)",
+        'shop_bnum_info_button': "ℹ️ Beautiful Number Guide",
+        'shop_confirm_title': "🛒 **အတည်ပြုခြင်း**",
+        'shop_confirm_text': """
+**ပစ္စည်း:** {name}
+**စျေးနှုန်း:** {credits:.2f} C ({price:,} MMK)
+**သင့် Credits:** {user_credits:.2f} C
+
+ဝယ်ယူလိုပါသလား?
+""",
+        'shop_buy_button': "✅ ဝယ်မည်",
+        'shop_phone_prompt': "📱 သင့် ဖုန်းနံပါတ်ကို ရိုက်ထည့်ပါ:",
+        'shop_phone_invalid': "❌ မမှန်ကန်သော ဖုန်းနံပါတ်ဖြစ်ပါသည်။",
+        'shop_purchase_success': "🎉 **အောင်မြင်ပါပြီ!**\n\nOrder ID: `{order_id}`\nသင့်အား {credits:.2f} C နုတ်ယူပါပြီ။\n\nAdmin များမှ သင့် order အား စစ်ဆေးပေးပါမည်။",
+        'orders_title': "📋 **ကျွန်ုပ်၏ Orders**",
+        'orders_pending_title': "⏳ **စောင့်ဆိုင်းနေသော Orders**",
+        'orders_history_title': "📜 **Order မှတ်တမ်း**",
+        'orders_no_pending': "စောင့်ဆိုင်းနေသော order မရှိပါ။",
+        'orders_no_history': "Order မှတ်တမ်း မရှိပါ။",
+        'orders_item_format': "`{order_id}`\n📦 {package}\n💰 {cost:.2f} C | {status}\n📅 {timestamp}\n",
+        'language_selection': "🌐 **ဘာသာစကား ရွေးချယ်ပါ:**",
+        'language_changed': "✅ ဘာသာစကားအား မြန်မာသို့ ပြောင်းလဲပါပြီ။",
+        'force_join_message': "🔒 ဤ bot အား အသုံးပြုရန် ကျေးဇူးပြု၍ channel တွင် ပါဝင်ပါ:\n\n{channel}",
+        'force_join_button': "✅ စစ်ဆေးမည်",
+        'not_member_error': "❌ သင်သည် channel ၌ မပါဝင်သေးပါ။ ကျေးဇူးပြု၍ ပါဝင်ပြီး ပြန်လည် စစ်ဆေးပါ။",
+        'bnum_instructions_text': """
+📱 **Beautiful Number ဝယ်ယူမှု လမ်းညွှန်**
+
+သင်သည် အထူး ဖုန်းနံပါတ် တစ်ခု ဝယ်ယူနေပါသည်။ လုပ်ငန်းစဉ်များမှာ:
+
+1. ဤ bot တွင် သင့် credit များဖြင့် ဝယ်ယူမှု ပြီးစီးပါ
+2. သင့် order အား admin team သို့ ပို့ပေးပါမည်
+3. ပေးပို့မှု အစီအစဉ်အတွက် Telegram ရှိ ကျွန်ုပ်တို့ admin နှင့် တိုက်ရိုက် ဆက်သွယ်ပါ
+4. Admin အကောင့်: @CEO_METAVERSE
+5. Admin အား သင့် Order ID (ဝယ်ယူပြီးနောက် ရရှိမည်) နှင့် သင့် ပေးပို့လိပ်စာကို ပြောပြပါ။ နံပါတ် SIM ကို delivery service မှတဆင့် ပို့ပေးပါမည်။
 """
     }
 }
 
 def get_text(key: str, lang: str = 'en', **kwargs) -> str:
-    if lang not in LANG: lang = 'en'
-    text = LANG.get(lang, LANG['en']).get(key, f"_{key}_")
-    if kwargs: return text.format(**kwargs)
-    return text
+    """Get localized text with optional formatting."""
+    try:
+        text = TRANSLATIONS[lang].get(key, TRANSLATIONS['en'].get(key, f"Missing: {key}"))
+        return text.format(**kwargs) if kwargs else text
+    except KeyError:
+        return f"Missing translation: {key}"
+
+def get_available_languages():
+    """Get list of available language codes."""
+    return list(TRANSLATIONS.keys())
