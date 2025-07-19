@@ -1,177 +1,118 @@
-
 {% extends "base.html" %}
-
 {% block title %}Buy Credits - Atom Bot{% endblock %}
-
 {% block content %}
-<div class="professional-header text-center">
-    <h1><i class="fas fa-coins"></i> Buy Credit Points</h1>
-    <p class="mb-0">Secure Payment & Instant Top-up</p>
-    <div class="mt-3">
-        <a href="{{ url_for('dashboard') }}" class="btn btn-warning">
-            <i class="fas fa-arrow-left"></i> Back to Dashboard
-        </a>
-    </div>
-</div>
-
-<!-- Admin Contact Section -->
-<div class="row mb-4">
-    <div class="col-md-12">
-        <div class="card border-warning">
-            <div class="card-header bg-warning text-dark">
-                <h5><i class="fas fa-headset"></i> Need Help? Contact Admin</h5>
-            </div>
-            <div class="card-body text-center">
-                <div class="row">
-                    <div class="col-md-6">
-                        <h6><i class="fab fa-telegram"></i> Telegram</h6>
-                        <a href="https://t.me/CEO_METAVERSE" target="_blank" class="btn btn-info">
-                            @CEO_METAVERSE
-                        </a>
-                    </div>
-                    <div class="col-md-6">
-                        <h6><i class="fab fa-viber"></i> Viber</h6>
-                        <a href="viber://chat?number=09883249943" class="btn btn-success">
-                            09883249943
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Current Balance -->
-<div class="row mb-4">
-    <div class="col-md-12">
-        <div class="card bg-gradient" style="background: linear-gradient(45deg, #f39c12, #f1c40f);">
-            <div class="card-body text-white text-center">
-                <h4><i class="fas fa-wallet"></i> Current Balance</h4>
-                <h2>{{ "%.2f"|format(user_data.credits) }} Credits</h2>
-                <p>Available for purchases</p>
-            </div>
-        </div>
-    </div>
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2"><i class="fas fa-coins"></i> Buy Credits</h1>
 </div>
 
 <div class="row">
-    <!-- Credit Packages -->
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-header">
-                <h5><i class="fas fa-gift"></i> Available Credit Packages</h5>
-            </div>
+    <div class="col-lg-8">
+        <div class="card mb-4">
+            <div class="card-header">Select a Package</div>
             <div class="card-body">
                 <div class="row">
                     {% for package in packages %}
                     <div class="col-md-4 mb-3">
-                        <div class="card border-primary">
-                            <div class="card-body text-center">
-                                <i class="fas fa-coins fa-2x text-warning mb-3"></i>
-                                <h5>{{ package.credits }} Credits</h5>
-                                <h6 class="text-primary">{{ "{:,}".format(package.price) }} MMK</h6>
-                                <p class="text-muted small">Best value: {{ "%.1f"|format(package.credits / package.price * 1000) }} credits per 1,000 MMK</p>
-                                <button class="btn btn-primary w-100" onclick="purchaseCredits({{ package.credits }}, {{ package.price }})">
-                                    <i class="fas fa-shopping-cart"></i> Buy via Telegram
-                                </button>
+                        <div class="card h-100 text-center">
+                            <div class="card-body d-flex flex-column">
+                                <i class="fas fa-gift fa-2x text-primary mb-2"></i><h5>{{ package.credits }} Credits</h5>
+                                <h6 class="text-muted">{{ "{:,}".format(package.price) }} MMK</h6>
+                                <button class="btn btn-primary mt-auto buy-credit-btn" data-price="{{ package.price }}">Request</button>
                             </div>
                         </div>
                     </div>
                     {% endfor %}
                 </div>
-                
-                <!-- Custom Amount -->
-                <div class="card mt-3 border-info">
-                    <div class="card-body">
-                        <h6><i class="fas fa-calculator"></i> Custom Amount</h6>
-                        <div class="row align-items-end">
-                            <div class="col-md-4">
-                                <label class="form-label">Amount (MMK)</label>
-                                <input type="number" class="form-control" id="customAmount" placeholder="Enter amount" min="1000" step="1000">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Credits You'll Get</label>
-                                <input type="text" class="form-control" id="creditsCalculated" readonly>
-                            </div>
-                            <div class="col-md-4">
-                                <button class="btn btn-info w-100" onclick="purchaseCustomCredits()">
-                                    <i class="fas fa-shopping-cart"></i> Buy Custom
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header">Or Enter a Custom Amount</div>
+            <div class="card-body">
+                <div class="row g-2 align-items-end">
+                    <div class="col-sm-5"><label for="customAmount" class="form-label">Amount in MMK</label><input type="number" class="form-control" id="customAmount" placeholder="Min: 500" min="500"></div>
+                    <div class="col-sm-4"><label class="form-label">You Will Get</label><p id="creditsCalculated" class="form-control-plaintext ps-2">0.00 Credits</p></div>
+                    <div class="col-sm-3"><button class="btn btn-primary w-100" id="custom-buy-btn">Request</button></div>
                 </div>
             </div>
         </div>
     </div>
-    
-    <!-- Payment Methods -->
-    <div class="col-md-4">
+    <div class="col-lg-4">
         <div class="card">
-            <div class="card-header">
-                <h5><i class="fas fa-credit-card"></i> Payment Methods</h5>
-            </div>
+            <div class="card-header"><i class="fas fa-credit-card"></i> Payment Methods</div>
             <div class="card-body">
-                {% for method in manual_methods %}
-                <div class="card mb-2">
-                    <div class="card-body py-2">
-                        <h6 class="mb-1">{{ method.name }}</h6>
-                        <small class="text-muted">{{ method.details|replace('\n', '<br>')|safe }}</small>
-                    </div>
-                </div>
-                {% endfor %}
-                
-                <div class="alert alert-warning mt-3">
-                    <small>
-                        <i class="fas fa-exclamation-triangle"></i>
-                        <strong>Important:</strong> After payment, send screenshot to our Telegram bot for verification.
-                    </small>
-                </div>
-            </div>
-        </div>
-        
-        <div class="card mt-3">
-            <div class="card-header">
-                <h5><i class="fab fa-telegram"></i> How to Purchase</h5>
-            </div>
-            <div class="card-body">
-                <ol class="small">
-                    <li>Choose a credit package</li>
-                    <li>Make payment via any method above</li>
-                    <li>Open our Telegram bot</li>
-                    <li>Send payment screenshot</li>
-                    <li>Wait for admin approval</li>
-                    <li>Credits will be added automatically</li>
-                </ol>
-                <a href="https://t.me/AtomPointBot" target="_blank" class="btn btn-success w-100 mt-2">
-                    <i class="fab fa-telegram"></i> Open Telegram Bot
-                </a>
+                <p>After requesting a purchase, please send the exact amount to one of the following accounts:</p>
+                <ul class="list-group list-group-flush">
+                {% for method in payment_methods %}<li class="list-group-item bg-transparent d-flex justify-content-between align-items-center">{{ method.name }} <span><code>{{ method.number }}</code></span></li>{% endfor %}
+                </ul>
+                <p class="mt-3 small text-muted">Remember to contact an admin with your <strong>Order ID</strong> after you have made the payment to receive your credits.</p>
             </div>
         </div>
     </div>
 </div>
 
+<div class="modal fade" id="creditPurchaseModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">Confirm Credit Request</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <p id="modal-credit-info"></p>
+                <div id="modal-credit-alert" class="alert alert-danger" style="display: none;"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="confirm-credit-purchase-btn"><span class="spinner-border spinner-border-sm" style="display: none;"></span> Confirm Request</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
 <script>
-// Calculate credits for custom amount
-document.getElementById('customAmount').addEventListener('input', function() {
-    const amount = parseFloat(this.value) || 0;
-    const credits = amount / 1000; // 1000 MMK = 1 Credit (adjust as needed)
-    document.getElementById('creditsCalculated').value = credits.toFixed(2) + ' Credits';
-});
-
-function purchaseCredits(credits, price) {
-    alert(`To purchase ${credits} credits for ${price.toLocaleString()} MMK:\n\n1. Make payment using any method shown\n2. Open our Telegram bot\n3. Send payment screenshot\n4. Wait for approval`);
-    window.open('https://t.me/AtomPointBot', '_blank');
-}
-
-function purchaseCustomCredits() {
-    const amount = document.getElementById('customAmount').value;
-    if (!amount || amount < 1000) {
-        alert('Please enter a valid amount (minimum 1,000 MMK)');
-        return;
+document.addEventListener('DOMContentLoaded', function () {
+    const creditPurchaseModal = new bootstrap.Modal(document.getElementById('creditPurchaseModal'));
+    const CREDIT_RATE = {{ config.CREDIT_PER_MMK }};
+    let priceToBuy = 0;
+    function updateCreditCalculation() {
+        const amount = parseFloat(document.getElementById('customAmount').value) || 0;
+        document.getElementById('creditsCalculated').textContent = `${(amount * CREDIT_RATE).toFixed(2)} Credits`;
     }
-    const credits = (amount / 1000).toFixed(2);
-    purchaseCredits(credits, amount);
-}
+    document.getElementById('customAmount').addEventListener('input', updateCreditCalculation);
+    function triggerPurchase(price) {
+        priceToBuy = parseInt(price);
+        if (isNaN(priceToBuy) || priceToBuy < 500) { alert('Minimum purchase amount is 500 MMK.'); return; }
+        const credits = (priceToBuy * CREDIT_RATE).toFixed(2);
+        document.getElementById('modal-credit-info').innerHTML = `You are requesting to buy <strong>${credits} credits</strong> for <strong>${priceToBuy.toLocaleString()} MMK</strong>. Please confirm to log your request.`;
+        document.getElementById('modal-credit-alert').style.display = 'none';
+        creditPurchaseModal.show();
+    }
+    document.querySelectorAll('.buy-credit-btn').forEach(btn => btn.addEventListener('click', () => triggerPurchase(btn.dataset.price)));
+    document.getElementById('custom-buy-btn').addEventListener('click', () => triggerPurchase(document.getElementById('customAmount').value));
+    document.getElementById('confirm-credit-purchase-btn').addEventListener('click', async function() {
+        const confirmBtn = this;
+        const spinner = confirmBtn.querySelector('.spinner-border');
+        const alertBox = document.getElementById('modal-credit-alert');
+        spinner.style.display = 'inline-block';
+        confirmBtn.disabled = true;
+        try {
+            const response = await fetch('/purchase_credits', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ price: priceToBuy }) });
+            const result = await response.json();
+            if (result.success) {
+                creditPurchaseModal.hide();
+                alert(result.message);
+                window.location.href = "{{ url_for('orders') }}";
+            } else {
+                alertBox.textContent = result.error;
+                alertBox.style.display = 'block';
+            }
+        } catch (error) {
+            alertBox.textContent = 'A network error occurred.';
+            alertBox.style.display = 'block';
+        } finally {
+            spinner.style.display = 'none';
+            confirmBtn.disabled = false;
+        }
+    });
+});
 </script>
 {% endblock %}

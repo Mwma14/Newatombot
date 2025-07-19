@@ -1,45 +1,29 @@
-
 {% extends "base.html" %}
-
 {% block title %}{{ category }} - {{ operator }} - Atom Bot{% endblock %}
-
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2><i class="fas fa-list"></i> {{ operator }} - {{ category }}</h2>
-    <a href="{{ url_for('shop_operator', operator=operator) }}" class="btn btn-secondary">
-        <i class="fas fa-arrow-left"></i> Back to {{ operator }}
-    </a>
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2"><i class="fas fa-list"></i> {{ operator }} - {{ category }}</h1>
+    <a href="{{ url_for('shop') }}" class="btn btn-sm btn-outline-secondary"><i class="fas fa-arrow-left"></i> Back to Shop</a>
 </div>
 
 <div class="row">
     {% for product in products %}
-    <div class="col-md-6 mb-4">
-        <div class="card">
-            <div class="card-body">
+    <div class="col-lg-4 col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-body d-flex flex-column">
                 <h5 class="card-title">
-                    {% if product.type == 'bnum' %}
-                        <i class="fas fa-phone"></i> {{ product.name }}
-                    {% else %}
-                        <i class="fas fa-box"></i> {{ product.name }}
-                    {% endif %}
+                    {% if product.type == 'bnum' %}<i class="fas fa-gem text-info"></i>{% else %}<i class="fas fa-box"></i>{% endif %}
+                    {{ product.name }}
                 </h5>
-                
-                {% if product.extra %}
-                <p class="card-text text-muted">{{ product.extra }}</p>
-                {% endif %}
-                
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <span class="h6 text-primary">{{ "%.2f"|format(product.credits) }} Credits</span><br>
-                        <small class="text-muted">{{ "{:,}".format(product.price) }} MMK</small>
+                {% if product.extra %}<p class="card-text text-muted small">{{ product.extra|safe }}</p>{% endif %}
+                <div class="mt-auto pt-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="h5 text-primary">{{ "%.2f"|format(product.credits) }} C</span>
+                            <small class="d-block text-muted">{{ "{:,}".format(product.price) }} MMK</small>
+                        </div>
+                        <button class="btn btn-primary buy-btn" data-id="{{ product.id }}" data-type="{{ product.type }}" data-name="{{ product.name }}" data-credits="{{ product.credits }}"><i class="fas fa-shopping-cart"></i> Buy</button>
                     </div>
-                    <button class="btn btn-success buy-btn" 
-                            data-id="{{ product.id }}" 
-                            data-type="{{ product.type }}"
-                            data-name="{{ product.name }}"
-                            data-credits="{{ product.credits }}">
-                        <i class="fas fa-shopping-cart"></i> Buy Now
-                    </button>
                 </div>
             </div>
         </div>
@@ -48,36 +32,24 @@
 </div>
 
 {% if not products %}
-<div class="text-center">
-    <div class="card">
-        <div class="card-body">
-            <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
-            <h4>No Products Available</h4>
-            <p>There are currently no products in this category.</p>
-        </div>
-    </div>
-</div>
+<div class="alert alert-info">There are currently no products in this category.</div>
 {% endif %}
 
-<!-- Purchase Modal -->
-<div class="modal fade" id="purchaseModal" tabindex="-1">
-    <div class="modal-dialog">
+<div class="modal fade" id="purchaseModal" tabindex="-1" aria-labelledby="purchaseModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Confirm Purchase</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
+            <div class="modal-header"><h5 class="modal-title" id="purchaseModalLabel">Confirm Purchase</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
             <div class="modal-body">
-                <div id="productInfo"></div>
-                <div id="phoneNumberDiv" style="display: none;">
-                    <label for="phoneNumber" class="form-label">Phone Number</label>
-                    <input type="text" class="form-control" id="phoneNumber" 
-                           placeholder="Enter phone number for delivery">
+                <div id="modal-product-info" class="mb-3"></div>
+                <div id="modal-phone-div" class="mb-3" style="display: none;">
+                    <label for="modal-phone-number" class="form-label">Phone Number for Delivery</label>
+                    <input type="tel" class="form-control" id="modal-phone-number" placeholder="e.g., 09123456789">
                 </div>
+                <div id="modal-alert" class="alert alert-danger" style="display: none;"></div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-success" id="confirmPurchase">Confirm Purchase</button>
+                <button type="button" class="btn btn-primary" id="confirm-purchase-btn"><span class="spinner-border spinner-border-sm" style="display: none;"></span> Confirm</button>
             </div>
         </div>
     </div>
@@ -86,62 +58,54 @@
 
 {% block scripts %}
 <script>
-let currentProduct = {};
-
-$('.buy-btn').click(function() {
-    currentProduct = {
-        id: $(this).data('id'),
-        type: $(this).data('type'),
-        name: $(this).data('name'),
-        credits: $(this).data('credits')
-    };
-    
-    $('#productInfo').html(`
-        <h6>${currentProduct.name}</h6>
-        <p>Cost: ${currentProduct.credits} Credits</p>
-    `);
-    
-    if (currentProduct.type === 'product') {
-        $('#phoneNumberDiv').show();
-    } else {
-        $('#phoneNumberDiv').hide();
-    }
-    
-    $('#purchaseModal').modal('show');
-});
-
-$('#confirmPurchase').click(function() {
-    let phoneNumber = $('#phoneNumber').val();
-    
-    if (currentProduct.type === 'product' && !phoneNumber) {
-        alert('Please enter a phone number for delivery.');
-        return;
-    }
-    
-    $.ajax({
-        url: '/purchase',
-        method: 'POST',
-        contentType: 'application/json',
-        data: JSON.stringify({
-            product_id: currentProduct.id,
-            product_type: currentProduct.type,
-            phone_number: phoneNumber
-        }),
-        success: function(response) {
-            if (response.success) {
-                alert(response.message);
-                $('#purchaseModal').modal('hide');
-                location.reload();
-            } else {
-                let errorMsg = response.error;
-                if (response.show_admin) {
-                    errorMsg += '\n\nAdmin Telegram: ' + response.admin_telegram + '\nAdmin Viber: ' + response.admin_viber;
-                }
-                alert(errorMsg);
+document.addEventListener('DOMContentLoaded', function () {
+    const purchaseModal = new bootstrap.Modal(document.getElementById('purchaseModal'));
+    let currentProduct = {};
+    document.querySelectorAll('.buy-btn').forEach(button => {
+        button.addEventListener('click', function () {
+            currentProduct = { id: this.dataset.id, type: this.dataset.type, name: this.dataset.name, credits: this.dataset.credits };
+            document.getElementById('modal-product-info').innerHTML = `<p>Buy <strong>${currentProduct.name}</strong> for <strong class="text-primary">${parseFloat(currentProduct.credits).toFixed(2)} C</strong>?</p>`;
+            document.getElementById('modal-phone-div').style.display = (currentProduct.type === 'product') ? 'block' : 'none';
+            document.getElementById('modal-phone-number').value = '';
+            document.getElementById('modal-alert').style.display = 'none';
+            document.querySelector('#confirm-purchase-btn .spinner-border').style.display = 'none';
+            purchaseModal.show();
+        });
+    });
+    document.getElementById('confirm-purchase-btn').addEventListener('click', async function () {
+        const confirmBtn = this;
+        const spinner = confirmBtn.querySelector('.spinner-border');
+        const alertBox = document.getElementById('modal-alert');
+        alertBox.style.display = 'none';
+        const payload = { product_id: currentProduct.id, product_type: currentProduct.type };
+        if (currentProduct.type === 'product') {
+            const phoneNumber = document.getElementById('modal-phone-number').value;
+            if (!phoneNumber || !/^\d{7,15}$/.test(phoneNumber)) {
+                alertBox.textContent = 'Please enter a valid phone number.';
+                alertBox.style.display = 'block';
+                return;
             }
-        },
-        error: function() {
-            alert('An error occurred. Please try again.');
+            payload.phone_number = phoneNumber;
+        }
+        spinner.style.display = 'inline-block';
+        confirmBtn.disabled = true;
+        try {
+            const response = await fetch('/purchase', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            const result = await response.json();
+            if (result.success) {
+                alert(result.message);
+                purchaseModal.hide();
+                window.location.href = "{{ url_for('orders') }}";
+            } else {
+                alertBox.textContent = result.error || 'An unknown error occurred.';
+                alertBox.style.display = 'block';
+            }
+        } catch (error) {
+            alertBox.textContent = 'Network error. Please try again.';
+            alertBox.style.display = 'block';
+        } finally {
+            spinner.style.display = 'none';
+            confirmBtn.disabled = false;
         }
     });
 });

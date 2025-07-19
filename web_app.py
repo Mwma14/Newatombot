@@ -1,433 +1,272 @@
-
-from flask import Flask, render_template, request, jsonify, session, redirect, url_for
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for, flash
 import asyncio
-import threading
-import time
+import telegram
+import html
 from datetime import datetime
+import random
+import string
+
 import database as db
 from products import calculate_credit_cost
 import config
 from config import logger
-import html
 
 app = Flask(__name__)
-app.secret_key = 'your-secret-key-change-this'
+app.secret_key = 'a-much-more-secure-secret-key-for-production'
 
-# Make config available in templates
 @app.context_processor
 def inject_config():
     return dict(config=config)
 
-# Store active bot context for web requests
-web_context = {}
-
-def run_async(coro):
-    """Helper function to run async functions in sync context"""
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
+async def send_telegram_notification(message, keyboard, order_type):
+    bot = telegram.Bot(token=config.TOKEN)
     try:
-        return loop.run_until_complete(coro)
-    finally:
-        loop.close()
+        if "CREDIT" in order_type.upper():
+            target_channel = config.CREDIT_REVIEW_CHANNEL
+        else:
+            target_channel = config.ORDER_FULFILLMENT_CHANNEL
+
+        await bot.send_message(
+            chat_id=target_channel, 
+            text=message, 
+            reply_markup=keyboard, 
+            parse_mode=telegram.constants.ParseMode.HTML
+        )
+    except Exception as e:
+        logger.error(f"Failed to send notification to {target_channel}: {e}")
+        first_admin_id = next(iter(config.ADMIN_IDS))
+        await bot.send_message(
+            chat_id=first_admin_id,
+            text="[FALLBACK] " + message,
+            reply_markup=keyboard,
+            parse_mode=telegram.constants.ParseMode.HTML
+        )
 
 @app.route('/')
 def index():
-    if 'user_id' in session:
-        return redirect(url_for('dashboard'))
     return redirect(url_for('login'))
 
 @app.route('/login', methods=['GET', 'POST'])
-def login():
+async def login():
     if 'user_id' in session:
         return redirect(url_for('dashboard'))
         
     if request.method == 'POST':
         user_id = request.form.get('user_id')
-        if not user_id:
-            return render_template('login.html', error='Please enter your Telegram User ID')
+        if not user_id or not user_id.isdigit():
+            flash('Please enter a valid numeric User ID', 'danger')
+            return redirect(url_for('login'))
         try:
             user_id = int(user_id)
-            user_data = run_async(db.get_user_data(user_id))
-            if user_data['credits'] == 0 and not user_data['is_banned']:
-                # New user, initialize with default credits
-                run_async(db.change_user_credits(user_id, 0))
+            await db.get_user_data(user_id)
             session['user_id'] = user_id
-            session['user_data'] = user_data
             return redirect(url_for('dashboard'))
-        except ValueError:
-            return render_template('login.html', error='Please enter a valid numeric User ID')
         except Exception as e:
             logger.error(f"Login error for user {user_id}: {e}")
-            return render_template('login.html', error='Login failed. Please check your User ID.')
+            flash('Login failed. Please check your User ID and try again.', 'danger')
+            return redirect(url_for('login'))
     
     return render_template('login.html')
 
 @app.route('/dashboard')
-def dashboard():
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
-    
+async def dashboard():
+    if 'user_id' not in session: return redirect(url_for('login'))
     user_id = session['user_id']
-    user_data = run_async(db.get_user_data(user_id))
-    session['user_data'] = user_data
+    user_data = await db.get_user_data(user_id)
+    pending, history = await db.get_user_orders(user_id)
+    recent_orders = (pending + history)[:5]
     
-    # Get order history for dashboard
-    pending, history = run_async(db.get_user_orders(user_id))
-    recent_orders = (pending + history)[:5]  # Show 5 most recent orders
+    formatted_recent_orders = [{
+        'id': o[0], 'package': o[1], 'status': o[2].replace('_', ' ').title(), 
+        'cost': o[4], 'date': datetime.fromisoformat(o[3]).strftime('%b %d, %Y')
+    } for o in recent_orders]
     
-    # Format recent orders
-    formatted_recent_orders = []
-    for order in recent_orders:
-        o_id, pkg, status, ts_str, cost = order
-        date_obj = datetime.fromisoformat(ts_str)
-        formatted_recent_orders.append({
-            'id': o_id,
-            'package': pkg,
-            'status': status.replace('_', ' ').title(),
-            'cost': cost,
-            'date': date_obj.strftime('%Y-%m-%d %H:%M')
-        })
-    
-    # Try to get Telegram username (this would need bot context, so we'll just show ID for now)
-    telegram_username = None  # This could be enhanced with bot integration
-    
-    return render_template('dashboard.html', 
-                         user_data=user_data, 
-                         user_id=user_id, 
-                         recent_orders=formatted_recent_orders,
-                         telegram_username=telegram_username)
+    return render_template('dashboard.html', user_data=user_data, user_id=user_id, recent_orders=formatted_recent_orders)
 
 @app.route('/shop')
-def shop():
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
-    
-    # Get all products organized by operator and category
-    all_products = run_async(db.admin_get_all_products())
-    operators = run_async(db.get_operators())
-    
-    # Organize products by operator and category with skill levels
-    organized_products = {}
-    for operator_tuple in operators:
-        operator = operator_tuple[0]
-        organized_products[operator] = {}
-        
-        # Get categories for this operator
-        categories = run_async(db.get_categories_for_operator(operator))
-        
-        for category in categories:
-            if category == "Beautiful Numbers":
-                # Handle beautiful numbers separately
-                beautiful_numbers = run_async(db.get_beautiful_numbers(operator))
-                if beautiful_numbers:
-                    organized_products[operator][category] = {
-                        'products': beautiful_numbers,
-                        'type': 'bnum'
-                    }
-            else:
-                # Regular products
-                products = run_async(db.get_products_in_category(operator, category))
-                if products:
-                    # Categorize by skill level based on pricing
-                    categorized = {'Beginner': [], 'Advanced': [], 'Expert': [], 'Professional': []}
-                    
-                    for product in products:
-                        prod_id, name, price_mmk, extra = product
-                        credits = calculate_credit_cost(price_mmk)
-                        
-                        product_info = {
-                            'id': prod_id,
-                            'name': name,
-                            'price': price_mmk,
-                            'credits': credits,
-                            'extra': extra or ''
-                        }
-                        
-                        # Categorize by price ranges
-                        if credits <= 1:
-                            categorized['Beginner'].append(product_info)
-                        elif credits <= 3:
-                            categorized['Advanced'].append(product_info)
-                        elif credits <= 5:
-                            categorized['Expert'].append(product_info)
-                        else:
-                            categorized['Professional'].append(product_info)
-                    
-                    organized_products[operator][category] = {
-                        'products': categorized,
-                        'type': 'product'
-                    }
-    
-    return render_template('shop.html', organized_products=organized_products)
+async def shop():
+    if 'user_id' not in session: return redirect(url_for('login'))
+    return render_template('shop.html')
 
-@app.route('/shop/<operator>')
-def shop_operator(operator):
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
-    
-    categories = run_async(db.get_categories_for_operator(operator))
-    return render_template('shop_operator.html', operator=operator, categories=categories)
+@app.route('/api/shop-data')
+async def api_shop_data():
+    if 'user_id' not in session: return jsonify({"error": "Unauthorized"}), 401
+    all_products = await db.admin_get_all_products()
+    organized_products = {}
+    for op, cat, name, prod_id, price, active in all_products:
+        if not active: continue
+        if op not in organized_products: organized_products[op] = {}
+        if cat not in organized_products[op]: organized_products[op][cat] = []
+        organized_products[op][cat].append({
+            'id': prod_id, 'name': name, 'price': price,
+            'credits': calculate_credit_cost(price), 'type': 'product'
+        })
+    return jsonify(organized_products)
 
 @app.route('/shop/<operator>/<category>')
-def shop_category(operator, category):
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
+async def shop_category(operator, category):
+    if 'user_id' not in session: return redirect(url_for('login'))
     
-    if category == "Beautiful Numbers":
-        products = run_async(db.get_beautiful_numbers(operator))
-        product_type = 'bnum'
-    else:
-        products = run_async(db.get_products_in_category(operator, category))
-        product_type = 'product'
-    
-    # Calculate credit costs
+    category_name = category.replace('_', ' ')
     products_with_credits = []
-    for product in products:
-        if product_type == 'bnum':
-            prod_id, phone, price = product
-            credits = calculate_credit_cost(price)
+    if category_name == "Beautiful Numbers":
+        products = await db.get_beautiful_numbers(operator)
+        for prod_id, phone, price in products:
             products_with_credits.append({
-                'id': prod_id,
-                'name': phone,
-                'price': price,
-                'credits': credits,
-                'type': 'bnum'
+                'id': prod_id, 'name': phone, 'price': price, 'extra': '',
+                'credits': calculate_credit_cost(price), 'type': 'bnum'
             })
-        else:
-            prod_id, name, price, extra = product
-            credits = calculate_credit_cost(price)
+    else:
+        products = await db.get_products_in_category(operator, category_name)
+        for prod_id, name, price, extra in products:
             products_with_credits.append({
-                'id': prod_id,
-                'name': name,
-                'price': price,
-                'credits': credits,
-                'extra': extra or '',
-                'type': 'product'
+                'id': prod_id, 'name': name, 'price': price, 'extra': extra or '',
+                'credits': calculate_credit_cost(price), 'type': 'product'
             })
-    
+            
     return render_template('shop_category.html', 
-                         operator=operator, 
-                         category=category, 
-                         products=products_with_credits)
+                         operator=operator, category=category_name, products=products_with_credits)
+
+@app.route('/purchase_credits', methods=['POST'])
+async def purchase_credits():
+    if 'user_id' not in session: return jsonify({'success': False, 'error': 'Not logged in'}), 401
+    data = await request.get_json()
+    price = data.get('price')
+    user_id = session['user_id']
+    if not isinstance(price, int) or price < 500:
+        return jsonify({'success': False, 'error': 'Invalid amount. Minimum is 500 MMK.'})
+
+    credit_amount = calculate_credit_cost(price)
+    order_id = f"CRD-WEB-{datetime.now().strftime('%y%m%d')}-{''.join(random.choices(string.ascii_uppercase + string.digits, k=4))}"
+
+    await db.create_order(
+        order_id=order_id, user_id=user_id, order_type='credit_purchase',
+        package_name=f"{credit_amount:.2f} Credits Request", credit_cost=credit_amount,
+        payment_method="Web Request", status='pending_payment')
+
+    admin_caption = (f"🚨 <b>[WEB CREDIT REQUEST]</b> 🚨\n\n"
+                     f"User ID: <code>{user_id}</code> has requested to buy credits.\n"
+                     f"Order ID: <code>{order_id}</code>\n"
+                     f"Amount: <b>{price:,} MMK</b> ({credit_amount:.2f} Credits)\n\n"
+                     f"Tell the user to contact you with the Order ID after they have paid. Approve this order only after confirming payment.")
+    admin_keyboard = telegram.InlineKeyboardMarkup([[
+        telegram.InlineKeyboardButton("✅ Approve Credits", callback_data=f"admin_approve_credit_{order_id}_{user_id}"),
+        telegram.InlineKeyboardButton("❌ Reject", callback_data=f"admin_reject_credit_{order_id}_{user_id}")]])
+
+    await send_telegram_notification(admin_caption, admin_keyboard, 'credit_purchase')
+    return jsonify({'success': True, 'message': f'Your request for {credit_amount:.2f} credits has been logged with Order ID: {order_id}. Please make the payment and contact an admin with this Order ID to get your credits approved.'})
 
 @app.route('/purchase', methods=['POST'])
-def purchase():
-    if 'user_id' not in session:
-        return jsonify({'success': False, 'error': 'Not logged in'})
-    
+async def purchase():
+    if 'user_id' not in session: return jsonify({'success': False, 'error': 'Not logged in'}), 401
+    data = await request.get_json()
     user_id = session['user_id']
-    product_id = request.json.get('product_id')
-    product_type = request.json.get('product_type')
-    phone_number = request.json.get('phone_number', '')
-    
+    product_id = data.get('product_id')
+    product_type = data.get('product_type')
+    phone_number = data.get('phone_number', '')
+
     try:
-        user_data = run_async(db.get_user_data(user_id))
-        
+        user_data = await db.get_user_data(user_id)
         if product_type == 'bnum':
-            product_details = run_async(db.get_beautiful_number_by_id(int(product_id)))
-            if not product_details:
-                return jsonify({'success': False, 'error': 'Product not found'})
+            product_details = await db.get_beautiful_number_by_id(int(product_id))
+            if not product_details: return jsonify({'success': False, 'error': 'This number is no longer available.'})
             _, operator, name, price_mmk = product_details
+            delivery_info = "Beautiful Number delivery (Contact User)"
         else:
-            product_details = run_async(db.get_product_by_id(product_id))
-            if not product_details:
-                return jsonify({'success': False, 'error': 'Product not found'})
+            product_details = await db.get_product_by_id(product_id)
+            if not product_details: return jsonify({'success': False, 'error': 'This product is no longer available.'})
+            if not phone_number or not phone_number.isdigit(): return jsonify({'success': False, 'error': 'A valid phone number is required.'})
             _, operator, _, name, price_mmk, _ = product_details
-        
+            delivery_info = phone_number
+
         credit_cost = calculate_credit_cost(price_mmk)
-        
         if user_data['credits'] < credit_cost:
-            return jsonify({
-                'success': False, 
-                'error': 'Your Credit Points Balance is not enough. Please Buy Credit Points Via Telegram Bot.',
-                'show_admin': True,
-                'admin_telegram': '@CEO_METAVERSE',
-                'admin_viber': '09883249943'
-            })
-        
-        # Generate order ID
-        import random
-        import string
+            return jsonify({'success': False, 'error': f"Insufficient credits. You need {credit_cost:.2f} C, but you only have {user_data['credits']:.2f} C."})
+
         order_id = f"WEB-{datetime.now().strftime('%y%m%d')}-{''.join(random.choices(string.ascii_uppercase + string.digits, k=4))}"
+        await db.change_user_credits(user_id, -credit_cost)
+        await db.create_order(
+            order_id=order_id, user_id=user_id, order_type='product_purchase',
+            package_name=name, credit_cost=credit_cost, status='pending_approval', delivery_info=delivery_info)
+
+        admin_caption = (f"📦 <b>[WEB ORDER]</b> 📦\n\n"
+                         f"User ID: <code>{user_id}</code>\n"
+                         f"Order ID: <code>{order_id}</code>\n\n"
+                         f"Deliver: <code>{html.escape(name)}</code>\n"
+                         f"To: <code>{html.escape(delivery_info)}</code>\n"
+                         f"Operator: <b>{html.escape(operator)}</b>")
+        admin_keyboard = telegram.InlineKeyboardMarkup([[
+            telegram.InlineKeyboardButton("✅ Done", callback_data=f"admin_approve_product_{order_id}_{user_id}"),
+            telegram.InlineKeyboardButton("❌ Reject (Refund)", callback_data=f"admin_reject_product_{order_id}_{user_id}")]])
         
-        # Deduct credits
-        run_async(db.change_user_credits(user_id, -credit_cost))
-        
-        # Create order
-        delivery_info = phone_number if phone_number else "Beautiful Number delivery"
-        run_async(db.create_order(
-            order_id=order_id,
-            user_id=user_id,
-            order_type='product_purchase',
-            package_name=name,
-            credit_cost=credit_cost,
-            status='pending_approval',
-            delivery_info=delivery_info
-        ))
-        
-        return jsonify({
-            'success': True,
-            'order_id': order_id,
-            'message': f'Order placed successfully! Order ID: {order_id}'
-        })
-        
+        await send_telegram_notification(admin_caption, admin_keyboard, 'product_purchase')
+        new_balance = user_data["credits"] - credit_cost
+        return jsonify({'success': True, 'message': f'Order placed successfully! Order ID: {order_id}. Your new balance is {new_balance:.2f} C.'})
     except Exception as e:
-        logger.error(f"Web purchase error: {e}")
-        return jsonify({'success': False, 'error': str(e)})
+        logger.error(f"Web purchase error: {e}", exc_info=True)
+        return jsonify({'success': False, 'error': 'An unexpected server error occurred.'}), 500
 
 @app.route('/credits')
-def credits():
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
-    
-    user_id = session['user_id']
-    user_data = run_async(db.get_user_data(user_id))
-    
-    # Manual payment methods (similar to bot)
-    manual_methods = [
-        {'name': 'KBZ Pay', 'details': 'Send to: 09123456789\nName: Bot Admin'},
-        {'name': 'Wave Money', 'details': 'Send to: 09987654321\nName: Bot Admin'},
-        {'name': 'CB Bank', 'details': 'Account: 123456789\nName: Bot Admin'},
-        {'name': 'AYA Bank', 'details': 'Account: 987654321\nName: Bot Admin'}
-    ]
-    
-    return render_template('credits.html', 
-                         packages=config.CREDIT_PACKAGES,
-                         manual_methods=manual_methods,
-                         user_data=user_data)
+async def credits():
+    if 'user_id' not in session: return redirect(url_for('login'))
+    user_data = await db.get_user_data(session['user_id'])
+    payment_methods = [{'name': 'KBZ Pay', 'number': config.KBZ_PAY_NUMBER}, {'name': 'Wave Pay', 'number': config.WAVE_PAY_NUMBER}]
+    return render_template('credits.html', packages=config.CREDIT_PACKAGES, payment_methods=payment_methods, user_data=user_data)
 
 @app.route('/orders')
-def orders():
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
-    
+async def orders():
+    if 'user_id' not in session: return redirect(url_for('login'))
     user_id = session['user_id']
-    pending, history = run_async(db.get_user_orders(user_id))
+    pending, history = await db.get_user_orders(user_id)
     
-    # Format orders for display with categories
-    formatted_pending = []
-    formatted_history = []
+    async def format_order_list(orders):
+        formatted = []
+        for o_id, pkg, status, ts_str, cost in orders:
+            order_details = await db.get_order_details(o_id)
+            o_type = order_details[4] if order_details else 'Unknown'
+            formatted.append({
+                'id': o_id, 'package': pkg, 'status': status.replace('_', ' ').title(), 'cost': cost,
+                'date': datetime.fromisoformat(ts_str).strftime('%b %d, %Y %H:%M'),
+                'type': 'Credit Purchase' if o_type == 'credit_purchase' else 'Product Purchase'
+            })
+        return formatted
     
-    for order in pending:
-        o_id, pkg, status, ts_str, cost = order
-        date_obj = datetime.fromisoformat(ts_str)
-        order_data = {
-            'id': o_id,
-            'package': pkg,
-            'status': status.replace('_', ' ').title(),
-            'cost': cost,
-            'date': date_obj.strftime('%Y-%m-%d %H:%M'),
-            'type': 'Credit Purchase' if 'Credit' in pkg else 'Product Purchase'
-        }
-        formatted_pending.append(order_data)
-    
-    for order in history:
-        o_id, pkg, status, ts_str, cost = order
-        date_obj = datetime.fromisoformat(ts_str)
-        order_data = {
-            'id': o_id,
-            'package': pkg,
-            'status': status.replace('_', ' ').title(),
-            'cost': cost,
-            'date': date_obj.strftime('%Y-%m-%d %H:%M'),
-            'type': 'Credit Purchase' if 'Credit' in pkg else 'Product Purchase'
-        }
-        formatted_history.append(order_data)
-    
-    # Get user's current credit balance
-    user_data = run_async(db.get_user_data(user_id))
-    
-    return render_template('orders.html', 
-                         pending_orders=formatted_pending,
-                         completed_orders=formatted_history,
-                         user_data=user_data)
+    user_data = await db.get_user_data(user_id)
+    return render_template('orders.html', pending_orders=await format_order_list(pending), completed_orders=await format_order_list(history), user_data=user_data)
 
 @app.route('/admin')
 def admin():
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
-    
-    user_id = session['user_id']
-    if user_id not in config.ADMIN_IDS:
-        return redirect(url_for('dashboard'))
-    
+    if session.get('user_id') not in config.ADMIN_IDS: return redirect(url_for('dashboard'))
     return render_template('admin.html')
 
 @app.route('/admin/orders')
-def admin_orders():
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
-    
-    if session['user_id'] not in config.ADMIN_IDS:
-        return redirect(url_for('dashboard'))
-    
-    all_orders = run_async(db.admin_get_all_orders())
-    
-    formatted_orders = []
-    for order in all_orders:
-        o_id, u_id, pkg, cost, status, ts = order
-        ts_formatted = datetime.fromisoformat(ts).strftime('%Y-%m-%d %H:%M')
-        formatted_orders.append({
-            'id': o_id,
-            'user_id': u_id,
-            'package': pkg,
-            'cost': cost,
-            'status': status.replace('_', ' ').title(),
-            'timestamp': ts_formatted
-        })
-    
+async def admin_orders():
+    if session.get('user_id') not in config.ADMIN_IDS: return redirect(url_for('dashboard'))
+    all_orders = await db.admin_get_all_orders()
+    formatted_orders = [{
+        'id': o[0], 'user_id': o[1], 'package': o[2], 'cost': o[3], 'status': o[4].replace('_', ' ').title(),
+        'timestamp': datetime.fromisoformat(o[5]).strftime('%Y-%m-%d %H:%M')
+    } for o in all_orders]
     return render_template('admin_orders.html', orders=formatted_orders)
 
 @app.route('/admin/users')
-def admin_users():
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
-    
-    if session['user_id'] not in config.ADMIN_IDS:
-        return redirect(url_for('dashboard'))
-    
-    # Get all user IDs and their basic info
-    user_ids = run_async(db.admin_get_all_user_ids())
-    users = []
-    
-    for (uid,) in user_ids[:50]:  # Limit to first 50 users for performance
-        user_data = run_async(db.get_user_data(uid))
-        users.append({
-            'id': uid,
-            'credits': user_data['credits'],
-            'is_banned': user_data['is_banned']
-        })
-    
+async def admin_users():
+    if session.get('user_id') not in config.ADMIN_IDS: return redirect(url_for('dashboard'))
+    user_ids = await db.admin_get_all_user_ids()
+    users = [dict({'id': uid}, **await db.get_user_data(uid)) for (uid,) in user_ids[:50]]
     return render_template('admin_users.html', users=users)
 
 @app.route('/admin/products')
-def admin_products():
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
-    
-    if session['user_id'] not in config.ADMIN_IDS:
-        return redirect(url_for('dashboard'))
-    
-    all_products = run_async(db.admin_get_all_products())
-    
-    formatted_products = []
-    for product in all_products:
-        operator, category, name, prod_id, price, active = product
-        formatted_products.append({
-            'id': prod_id,
-            'operator': operator,
-            'category': category,
-            'name': name,
-            'price': price,
-            'active': active
-        })
-    
+async def admin_products():
+    if session.get('user_id') not in config.ADMIN_IDS: return redirect(url_for('dashboard'))
+    all_products = await db.admin_get_all_products()
+    formatted_products = [{
+        'id': p[3], 'operator': p[0], 'category': p[1], 'name': p[2], 'price': p[4], 'active': p[5]
+    } for p in all_products]
     return render_template('admin_products.html', products=formatted_products)
 
 @app.route('/logout')
 def logout():
     session.clear()
-    return redirect(url_for('index'))
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    flash('You have been logged out.', 'success')
+    return redirect(url_for('login'))
