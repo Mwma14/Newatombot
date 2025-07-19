@@ -1,0 +1,45 @@
+
+{% extends "base.html" %}
+
+{% block title %}Login - Atom Bot{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header text-center">
+                    <h3><i class="fas fa-sign-in-alt"></i> Login to Atom Bot</h3>
+                </div>
+                <div class="card-body">
+                    {% if error %}
+                        <div class="alert alert-danger">{{ error }}</div>
+                    {% endif %}
+                    
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label for="user_id" class="form-label">Your Telegram User ID</label>
+                            <input type="number" class="form-control" id="user_id" name="user_id" required 
+                                   placeholder="Enter your Telegram User ID">
+                            <div class="form-text">
+                                You can get your User ID by messaging @userinfobot on Telegram
+                            </div>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-sign-in-alt"></i> Login
+                        </button>
+                    </form>
+                    
+                    <div class="text-center mt-3">
+                        <small class="text-muted">
+                            Don't have a Telegram account? Start our bot first: 
+                            <a href="https://t.me/YourBotUsername" target="_blank">@YourBotUsername</a>
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

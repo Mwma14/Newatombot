@@ -1,0 +1,53 @@
+
+{% extends "base.html" %}
+
+{% block title %}Atom Bot - Welcome{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8 text-center">
+            <div class="card p-5">
+                <h1 class="display-4 mb-4">
+                    <i class="fas fa-robot text-primary"></i> Welcome to Atom Bot
+                </h1>
+                <p class="lead mb-4">Your comprehensive mobile services platform</p>
+                
+                <div class="row mb-4">
+                    <div class="col-md-4 mb-3">
+                        <div class="card h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-shopping-cart fa-3x text-primary mb-3"></i>
+                                <h5>Shop Products</h5>
+                                <p>Browse mobile packages, data plans, and beautiful numbers</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="card h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-coins fa-3x text-warning mb-3"></i>
+                                <h5>Credit System</h5>
+                                <p>Purchase credits and manage your balance</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="card h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-list fa-3x text-success mb-3"></i>
+                                <h5>Order Management</h5>
+                                <p>Track your orders and purchase history</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <a href="{{ url_for('login') }}" class="btn btn-primary btn-lg">
+                    <i class="fas fa-sign-in-alt"></i> Get Started
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,42 @@
+
+{% extends "base.html" %}
+
+{% block title %}Shop - Atom Bot{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-shopping-cart"></i> Shop</h2>
+    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Back to Dashboard
+    </a>
+</div>
+
+<div class="row">
+    {% for operator in operators %}
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-mobile-alt fa-3x text-primary mb-3"></i>
+                <h5 class="card-title">{{ operator[0] }}</h5>
+                <p class="card-text">Browse {{ operator[0] }} products and services</p>
+                <a href="{{ url_for('shop_operator', operator=operator[0]) }}" class="btn btn-primary">
+                    <i class="fas fa-eye"></i> View Products
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% if not operators %}
+<div class="text-center">
+    <div class="card">
+        <div class="card-body">
+            <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+            <h4>No Operators Available</h4>
+            <p>There are currently no operators available. Please check back later.</p>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

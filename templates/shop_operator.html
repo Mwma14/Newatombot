@@ -1,0 +1,47 @@
+
+{% extends "base.html" %}
+
+{% block title %}{{ operator }} - Shop - Atom Bot{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-mobile-alt"></i> {{ operator }} Categories</h2>
+    <a href="{{ url_for('shop') }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Back to Shop
+    </a>
+</div>
+
+<div class="row">
+    {% for category in categories %}
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                {% if category == 'Beautiful Numbers' %}
+                    <i class="fas fa-phone fa-3x text-success mb-3"></i>
+                {% elif 'Data' in category %}
+                    <i class="fas fa-wifi fa-3x text-primary mb-3"></i>
+                {% else %}
+                    <i class="fas fa-box fa-3x text-info mb-3"></i>
+                {% endif %}
+                <h5 class="card-title">{{ category }}</h5>
+                <a href="{{ url_for('shop_category', operator=operator, category=category) }}" class="btn btn-primary">
+                    <i class="fas fa-eye"></i> Browse
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% if not categories %}
+<div class="text-center">
+    <div class="card">
+        <div class="card-body">
+            <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+            <h4>No Categories Available</h4>
+            <p>There are currently no categories available for {{ operator }}.</p>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
