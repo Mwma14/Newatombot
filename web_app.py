@@ -71,15 +71,94 @@ def dashboard():
     user_data = run_async(db.get_user_data(user_id))
     session['user_data'] = user_data
     
-    return render_template('dashboard.html', user_data=user_data, user_id=user_id)
+    # Get order history for dashboard
+    pending, history = run_async(db.get_user_orders(user_id))
+    recent_orders = (pending + history)[:5]  # Show 5 most recent orders
+    
+    # Format recent orders
+    formatted_recent_orders = []
+    for order in recent_orders:
+        o_id, pkg, status, ts_str, cost = order
+        date_obj = datetime.fromisoformat(ts_str)
+        formatted_recent_orders.append({
+            'id': o_id,
+            'package': pkg,
+            'status': status.replace('_', ' ').title(),
+            'cost': cost,
+            'date': date_obj.strftime('%Y-%m-%d %H:%M')
+        })
+    
+    # Try to get Telegram username (this would need bot context, so we'll just show ID for now)
+    telegram_username = None  # This could be enhanced with bot integration
+    
+    return render_template('dashboard.html', 
+                         user_data=user_data, 
+                         user_id=user_id, 
+                         recent_orders=formatted_recent_orders,
+                         telegram_username=telegram_username)
 
 @app.route('/shop')
 def shop():
     if 'user_id' not in session:
         return redirect(url_for('login'))
     
+    # Get all products organized by operator and category
+    all_products = run_async(db.admin_get_all_products())
     operators = run_async(db.get_operators())
-    return render_template('shop.html', operators=operators)
+    
+    # Organize products by operator and category with skill levels
+    organized_products = {}
+    for operator_tuple in operators:
+        operator = operator_tuple[0]
+        organized_products[operator] = {}
+        
+        # Get categories for this operator
+        categories = run_async(db.get_categories_for_operator(operator))
+        
+        for category in categories:
+            if category == "Beautiful Numbers":
+                # Handle beautiful numbers separately
+                beautiful_numbers = run_async(db.get_beautiful_numbers(operator))
+                if beautiful_numbers:
+                    organized_products[operator][category] = {
+                        'products': beautiful_numbers,
+                        'type': 'bnum'
+                    }
+            else:
+                # Regular products
+                products = run_async(db.get_products_in_category(operator, category))
+                if products:
+                    # Categorize by skill level based on pricing
+                    categorized = {'Beginner': [], 'Advanced': [], 'Expert': [], 'Professional': []}
+                    
+                    for product in products:
+                        prod_id, name, price_mmk, extra = product
+                        credits = calculate_credit_cost(price_mmk)
+                        
+                        product_info = {
+                            'id': prod_id,
+                            'name': name,
+                            'price': price_mmk,
+                            'credits': credits,
+                            'extra': extra or ''
+                        }
+                        
+                        # Categorize by price ranges
+                        if credits <= 1:
+                            categorized['Beginner'].append(product_info)
+                        elif credits <= 3:
+                            categorized['Advanced'].append(product_info)
+                        elif credits <= 5:
+                            categorized['Expert'].append(product_info)
+                        else:
+                            categorized['Professional'].append(product_info)
+                    
+                    organized_products[operator][category] = {
+                        'products': categorized,
+                        'type': 'product'
+                    }
+    
+    return render_template('shop.html', organized_products=organized_products)
 
 @app.route('/shop/<operator>')
 def shop_operator(operator):
@@ -195,7 +274,21 @@ def credits():
     if 'user_id' not in session:
         return redirect(url_for('login'))
     
-    return render_template('credits.html', packages=config.CREDIT_PACKAGES)
+    user_id = session['user_id']
+    user_data = run_async(db.get_user_data(user_id))
+    
+    # Manual payment methods (similar to bot)
+    manual_methods = [
+        {'name': 'KBZ Pay', 'details': 'Send to: 09123456789\nName: Bot Admin'},
+        {'name': 'Wave Money', 'details': 'Send to: 09987654321\nName: Bot Admin'},
+        {'name': 'CB Bank', 'details': 'Account: 123456789\nName: Bot Admin'},
+        {'name': 'AYA Bank', 'details': 'Account: 987654321\nName: Bot Admin'}
+    ]
+    
+    return render_template('credits.html', 
+                         packages=config.CREDIT_PACKAGES,
+                         manual_methods=manual_methods,
+                         user_data=user_data)
 
 @app.route('/orders')
 def orders():
@@ -204,22 +297,44 @@ def orders():
     
     user_id = session['user_id']
     pending, history = run_async(db.get_user_orders(user_id))
-    all_orders = pending + history
     
-    # Format orders for display
-    formatted_orders = []
-    for order in all_orders:
+    # Format orders for display with categories
+    formatted_pending = []
+    formatted_history = []
+    
+    for order in pending:
         o_id, pkg, status, ts_str, cost = order
         date_obj = datetime.fromisoformat(ts_str)
-        formatted_orders.append({
+        order_data = {
             'id': o_id,
             'package': pkg,
             'status': status.replace('_', ' ').title(),
             'cost': cost,
-            'date': date_obj.strftime('%Y-%m-%d %H:%M')
-        })
+            'date': date_obj.strftime('%Y-%m-%d %H:%M'),
+            'type': 'Credit Purchase' if 'Credit' in pkg else 'Product Purchase'
+        }
+        formatted_pending.append(order_data)
     
-    return render_template('orders.html', orders=formatted_orders)
+    for order in history:
+        o_id, pkg, status, ts_str, cost = order
+        date_obj = datetime.fromisoformat(ts_str)
+        order_data = {
+            'id': o_id,
+            'package': pkg,
+            'status': status.replace('_', ' ').title(),
+            'cost': cost,
+            'date': date_obj.strftime('%Y-%m-%d %H:%M'),
+            'type': 'Credit Purchase' if 'Credit' in pkg else 'Product Purchase'
+        }
+        formatted_history.append(order_data)
+    
+    # Get user's current credit balance
+    user_data = run_async(db.get_user_data(user_id))
+    
+    return render_template('orders.html', 
+                         pending_orders=formatted_pending,
+                         completed_orders=formatted_history,
+                         user_data=user_data)
 
 @app.route('/admin')
 def admin():

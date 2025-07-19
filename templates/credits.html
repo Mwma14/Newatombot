@@ -11,47 +11,137 @@
     </a>
 </div>
 
-<div class="row justify-content-center">
-    <div class="col-md-8">
-        <div class="alert alert-info">
-            <i class="fas fa-info-circle"></i>
-            <strong>Note:</strong> Credit purchases through WebView are not yet supported. 
-            Please use the Telegram bot to purchase credits with payment verification.
+<!-- Current Balance -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card bg-gradient" style="background: linear-gradient(45deg, #f39c12, #f1c40f);">
+            <div class="card-body text-white text-center">
+                <h4><i class="fas fa-wallet"></i> Current Balance</h4>
+                <h2>{{ "%.2f"|format(user_data.credits) }} Credits</h2>
+                <p>Available for purchases</p>
+            </div>
         </div>
-        
+    </div>
+</div>
+
+<div class="row">
+    <!-- Credit Packages -->
+    <div class="col-md-8">
         <div class="card">
             <div class="card-header">
-                <h5>Available Credit Packages</h5>
+                <h5><i class="fas fa-gift"></i> Available Credit Packages</h5>
             </div>
             <div class="card-body">
                 <div class="row">
                     {% for package in packages %}
                     <div class="col-md-4 mb-3">
-                        <div class="card">
+                        <div class="card border-primary">
                             <div class="card-body text-center">
                                 <i class="fas fa-coins fa-2x text-warning mb-3"></i>
                                 <h5>{{ package.credits }} Credits</h5>
-                                <p class="text-muted">{{ "{:,}".format(package.price) }} MMK</p>
-                                <button class="btn btn-outline-primary" disabled>
-                                    Use Telegram Bot
+                                <h6 class="text-primary">{{ "{:,}".format(package.price) }} MMK</h6>
+                                <p class="text-muted small">Best value: {{ "%.1f"|format(package.credits / package.price * 1000) }} credits per 1,000 MMK</p>
+                                <button class="btn btn-primary w-100" onclick="purchaseCredits({{ package.credits }}, {{ package.price }})">
+                                    <i class="fas fa-shopping-cart"></i> Buy via Telegram
                                 </button>
                             </div>
                         </div>
                     </div>
                     {% endfor %}
                 </div>
+                
+                <!-- Custom Amount -->
+                <div class="card mt-3 border-info">
+                    <div class="card-body">
+                        <h6><i class="fas fa-calculator"></i> Custom Amount</h6>
+                        <div class="row align-items-end">
+                            <div class="col-md-4">
+                                <label class="form-label">Amount (MMK)</label>
+                                <input type="number" class="form-control" id="customAmount" placeholder="Enter amount" min="1000" step="1000">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Credits You'll Get</label>
+                                <input type="text" class="form-control" id="creditsCalculated" readonly>
+                            </div>
+                            <div class="col-md-4">
+                                <button class="btn btn-info w-100" onclick="purchaseCustomCredits()">
+                                    <i class="fas fa-shopping-cart"></i> Buy Custom
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Payment Methods -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-credit-card"></i> Payment Methods</h5>
+            </div>
+            <div class="card-body">
+                {% for method in manual_methods %}
+                <div class="card mb-2">
+                    <div class="card-body py-2">
+                        <h6 class="mb-1">{{ method.name }}</h6>
+                        <small class="text-muted">{{ method.details|replace('\n', '<br>')|safe }}</small>
+                    </div>
+                </div>
+                {% endfor %}
+                
+                <div class="alert alert-warning mt-3">
+                    <small>
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>Important:</strong> After payment, send screenshot to our Telegram bot for verification.
+                    </small>
+                </div>
             </div>
         </div>
         
-        <div class="card mt-4">
-            <div class="card-body text-center">
-                <h5>Purchase Credits via Telegram</h5>
-                <p>To purchase credits with secure payment processing, please use our Telegram bot:</p>
-                <a href="https://t.me/YourBotUsername" target="_blank" class="btn btn-primary">
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5><i class="fab fa-telegram"></i> How to Purchase</h5>
+            </div>
+            <div class="card-body">
+                <ol class="small">
+                    <li>Choose a credit package</li>
+                    <li>Make payment via any method above</li>
+                    <li>Open our Telegram bot</li>
+                    <li>Send payment screenshot</li>
+                    <li>Wait for admin approval</li>
+                    <li>Credits will be added automatically</li>
+                </ol>
+                <a href="https://t.me/YourBotUsername" target="_blank" class="btn btn-success w-100 mt-2">
                     <i class="fab fa-telegram"></i> Open Telegram Bot
                 </a>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+// Calculate credits for custom amount
+document.getElementById('customAmount').addEventListener('input', function() {
+    const amount = parseFloat(this.value) || 0;
+    const credits = amount / 1000; // 1000 MMK = 1 Credit (adjust as needed)
+    document.getElementById('creditsCalculated').value = credits.toFixed(2) + ' Credits';
+});
+
+function purchaseCredits(credits, price) {
+    alert(`To purchase ${credits} credits for ${price.toLocaleString()} MMK:\n\n1. Make payment using any method shown\n2. Open our Telegram bot\n3. Send payment screenshot\n4. Wait for approval`);
+    window.open('https://t.me/YourBotUsername', '_blank');
+}
+
+function purchaseCustomCredits() {
+    const amount = document.getElementById('customAmount').value;
+    if (!amount || amount < 1000) {
+        alert('Please enter a valid amount (minimum 1,000 MMK)');
+        return;
+    }
+    const credits = (amount / 1000).toFixed(2);
+    purchaseCredits(credits, amount);
+}
+</script>
 {% endblock %}

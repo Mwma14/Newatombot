@@ -5,38 +5,186 @@
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2><i class="fas fa-shopping-cart"></i> Shop</h2>
+    <h2><i class="fas fa-shopping-cart"></i> Advanced Product Shop</h2>
     <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">
         <i class="fas fa-arrow-left"></i> Back to Dashboard
     </a>
 </div>
 
-<div class="row">
-    {% for operator in operators %}
-    <div class="col-md-4 mb-4">
-        <div class="card h-100">
-            <div class="card-body text-center">
-                <i class="fas fa-mobile-alt fa-3x text-primary mb-3"></i>
-                <h5 class="card-title">{{ operator[0] }}</h5>
-                <p class="card-text">Browse {{ operator[0] }} products and services</p>
-                <a href="{{ url_for('shop_operator', operator=operator[0]) }}" class="btn btn-primary">
-                    <i class="fas fa-eye"></i> View Products
-                </a>
+<!-- Shop Navigation -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h5><i class="fas fa-filter"></i> Shop by Skill Level</h5>
+                <div class="btn-group w-100" role="group">
+                    <button type="button" class="btn btn-outline-success" onclick="filterProducts('beginner')">
+                        <i class="fas fa-seedling"></i> Beginner (≤1 Credit)
+                    </button>
+                    <button type="button" class="btn btn-outline-info" onclick="filterProducts('advanced')">
+                        <i class="fas fa-chart-line"></i> Advanced (1-3 Credits)
+                    </button>
+                    <button type="button" class="btn btn-outline-warning" onclick="filterProducts('expert')">
+                        <i class="fas fa-star"></i> Expert (3-5 Credits)
+                    </button>
+                    <button type="button" class="btn btn-outline-danger" onclick="filterProducts('professional')">
+                        <i class="fas fa-crown"></i> Professional (5+ Credits)
+                    </button>
+                    <button type="button" class="btn btn-outline-primary active" onclick="filterProducts('all')">
+                        <i class="fas fa-th"></i> Show All
+                    </button>
+                </div>
             </div>
+        </div>
+    </div>
+</div>
+
+{% for operator, categories in organized_products.items() %}
+<div class="mb-5">
+    <h3 class="mb-4">
+        <i class="fas fa-mobile-alt text-primary"></i> {{ operator }}
+        <span class="badge bg-secondary">{{ categories|length }} Categories</span>
+    </h3>
+    
+    {% for category, category_data in categories.items() %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">
+                {% if category == "Beautiful Numbers" %}
+                    <i class="fas fa-phone text-warning"></i>
+                {% else %}
+                    <i class="fas fa-box text-info"></i>
+                {% endif %}
+                {{ category }}
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if category_data.type == 'bnum' %}
+                <!-- Beautiful Numbers -->
+                <div class="row">
+                    {% for bnum in category_data.products %}
+                    <div class="col-md-4 mb-3">
+                        <div class="card border-warning">
+                            <div class="card-body text-center">
+                                <i class="fas fa-phone fa-2x text-warning mb-2"></i>
+                                <h6>{{ bnum[1] }}</h6>
+                                <p class="text-muted">{{ "{:,}".format(bnum[2]) }} MMK</p>
+                                <button class="btn btn-warning btn-sm" onclick="purchaseProduct('{{ bnum[0] }}', 'bnum')">
+                                    <i class="fas fa-shopping-cart"></i> Buy Now
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <!-- Regular Products by Skill Level -->
+                {% for skill_level, products in category_data.products.items() %}
+                {% if products %}
+                <div class="skill-level-section" data-skill="{{ skill_level.lower() }}">
+                    <h6 class="text-muted mb-3">
+                        {% if skill_level == 'Beginner' %}
+                            <span class="badge bg-success"><i class="fas fa-seedling"></i> {{ skill_level }}</span>
+                        {% elif skill_level == 'Advanced' %}
+                            <span class="badge bg-info"><i class="fas fa-chart-line"></i> {{ skill_level }}</span>
+                        {% elif skill_level == 'Expert' %}
+                            <span class="badge bg-warning"><i class="fas fa-star"></i> {{ skill_level }}</span>
+                        {% elif skill_level == 'Professional' %}
+                            <span class="badge bg-danger"><i class="fas fa-crown"></i> {{ skill_level }}</span>
+                        {% endif %}
+                    </h6>
+                    <div class="row">
+                        {% for product in products %}
+                        <div class="col-md-4 mb-3 product-card" data-credits="{{ product.credits }}">
+                            <div class="card border-{{ 'success' if skill_level == 'Beginner' else 'info' if skill_level == 'Advanced' else 'warning' if skill_level == 'Expert' else 'danger' }}">
+                                <div class="card-body">
+                                    <h6 class="card-title">{{ product.name }}</h6>
+                                    <p class="card-text">
+                                        <small class="text-muted">{{ product.extra }}</small><br>
+                                        <strong>{{ "{:,}".format(product.price) }} MMK</strong><br>
+                                        <span class="badge bg-primary">{{ "%.2f"|format(product.credits) }} Credits</span>
+                                    </p>
+                                    <button class="btn btn-{{ 'success' if skill_level == 'Beginner' else 'info' if skill_level == 'Advanced' else 'warning' if skill_level == 'Expert' else 'danger' }} btn-sm w-100" 
+                                            onclick="purchaseProduct('{{ product.id }}', 'product')">
+                                        <i class="fas fa-shopping-cart"></i> Purchase
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                {% endfor %}
+            {% endif %}
         </div>
     </div>
     {% endfor %}
 </div>
+{% endfor %}
 
-{% if not operators %}
+{% if not organized_products %}
 <div class="text-center">
     <div class="card">
         <div class="card-body">
             <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
-            <h4>No Operators Available</h4>
-            <p>There are currently no operators available. Please check back later.</p>
+            <h4>No Products Available</h4>
+            <p>There are currently no products available. Please check back later.</p>
         </div>
     </div>
 </div>
 {% endif %}
+
+<script>
+function filterProducts(level) {
+    const sections = document.querySelectorAll('.skill-level-section');
+    const buttons = document.querySelectorAll('.btn-group .btn');
+    
+    // Reset button states
+    buttons.forEach(btn => btn.classList.remove('active'));
+    
+    if (level === 'all') {
+        sections.forEach(section => section.style.display = 'block');
+        document.querySelector(`button[onclick="filterProducts('all')"]`).classList.add('active');
+    } else {
+        sections.forEach(section => {
+            if (section.dataset.skill === level) {
+                section.style.display = 'block';
+            } else {
+                section.style.display = 'none';
+            }
+        });
+        document.querySelector(`button[onclick="filterProducts('${level}')"]`).classList.add('active');
+    }
+}
+
+function purchaseProduct(productId, type) {
+    // This would integrate with your purchase system
+    const phoneNumber = prompt('Enter your phone number for delivery (if applicable):');
+    
+    fetch('/purchase', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            product_id: productId,
+            product_type: type,
+            phone_number: phoneNumber || ''
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Purchase successful! Order ID: ' + data.order_id);
+            location.reload();
+        } else {
+            alert('Purchase failed: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('Error: ' + error);
+    });
+}
+</script>
 {% endblock %}

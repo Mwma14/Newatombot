@@ -9,80 +9,186 @@
     <span class="badge bg-primary fs-6">User ID: {{ user_id }}</span>
 </div>
 
-<div class="row">
-    <div class="col-md-3 mb-4">
-        <div class="card text-center">
+<!-- User Profile Section -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-user"></i> User Profile</h5>
+            </div>
             <div class="card-body">
-                <i class="fas fa-coins fa-3x text-warning mb-3"></i>
-                <h4>{{ "%.2f"|format(user_data.credits) }} Credits</h4>
-                <p class="text-muted">Available Balance</p>
-                <a href="{{ url_for('credits') }}" class="btn btn-warning">
-                    <i class="fas fa-plus"></i> Add Credits
+                <div class="row">
+                    <div class="col-md-4">
+                        <p><strong>Telegram ID:</strong> {{ user_id }}</p>
+                        {% if telegram_username %}
+                        <p><strong>Username:</strong> @{{ telegram_username }}</p>
+                        {% else %}
+                        <p><strong>Username:</strong> <span class="text-muted">Not available</span></p>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-4">
+                        <p><strong>Credit Balance:</strong> <span class="text-warning fw-bold">{{ "%.2f"|format(user_data.credits) }} Credits</span></p>
+                        <p><strong>Account Status:</strong> 
+                            {% if user_data.is_banned %}
+                                <span class="badge bg-danger">Banned</span>
+                            {% else %}
+                                <span class="badge bg-success">Active</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="col-md-4">
+                        <p><strong>Language:</strong> {{ user_data.language.upper() }}</p>
+                        <p><strong>Member Since:</strong> <span class="text-muted">Recent</span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Stats -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card text-center bg-gradient" style="background: linear-gradient(45deg, #f39c12, #f1c40f);">
+            <div class="card-body text-white">
+                <i class="fas fa-coins fa-3x mb-3"></i>
+                <h4>{{ "%.2f"|format(user_data.credits) }}</h4>
+                <p>Available Credits</p>
+                <a href="{{ url_for('credits') }}" class="btn btn-light btn-sm">
+                    <i class="fas fa-plus"></i> Add More
                 </a>
             </div>
         </div>
     </div>
     
-    <div class="col-md-3 mb-4">
-        <div class="card text-center">
-            <div class="card-body">
-                <i class="fas fa-shopping-cart fa-3x text-primary mb-3"></i>
+    <div class="col-md-3 mb-3">
+        <div class="card text-center bg-gradient" style="background: linear-gradient(45deg, #3498db, #2980b9);">
+            <div class="card-body text-white">
+                <i class="fas fa-shopping-cart fa-3x mb-3"></i>
                 <h4>Shop</h4>
-                <p class="text-muted">Browse Products</p>
-                <a href="{{ url_for('shop') }}" class="btn btn-primary">
+                <p>Browse Products</p>
+                <a href="{{ url_for('shop') }}" class="btn btn-light btn-sm">
                     <i class="fas fa-store"></i> Start Shopping
                 </a>
             </div>
         </div>
     </div>
     
-    <div class="col-md-3 mb-4">
-        <div class="card text-center">
-            <div class="card-body">
-                <i class="fas fa-list fa-3x text-success mb-3"></i>
-                <h4>Orders</h4>
-                <p class="text-muted">Track Orders</p>
-                <a href="{{ url_for('orders') }}" class="btn btn-success">
-                    <i class="fas fa-eye"></i> View Orders
+    <div class="col-md-3 mb-3">
+        <div class="card text-center bg-gradient" style="background: linear-gradient(45deg, #27ae60, #2ecc71);">
+            <div class="card-body text-white">
+                <i class="fas fa-list fa-3x mb-3"></i>
+                <h4>{{ recent_orders|length }}</h4>
+                <p>Recent Orders</p>
+                <a href="{{ url_for('orders') }}" class="btn btn-light btn-sm">
+                    <i class="fas fa-eye"></i> View All
                 </a>
             </div>
         </div>
     </div>
     
-    <div class="col-md-3 mb-4">
-        <div class="card text-center">
-            <div class="card-body">
-                <i class="fas fa-user fa-3x text-info mb-3"></i>
+    <div class="col-md-3 mb-3">
+        <div class="card text-center bg-gradient" style="background: linear-gradient(45deg, #e74c3c, #c0392b);">
+            <div class="card-body text-white">
+                <i class="fas fa-user fa-3x mb-3"></i>
                 <h4>Account</h4>
-                <p class="text-muted">Status: 
-                    {% if user_data.is_banned %}
-                        <span class="badge bg-danger">Banned</span>
-                    {% else %}
-                        <span class="badge bg-success">Active</span>
-                    {% endif %}
-                </p>
+                <p>Status: {{ "Active" if not user_data.is_banned else "Banned" }}</p>
+                <button class="btn btn-light btn-sm" disabled>
+                    <i class="fas fa-cog"></i> Settings
+                </button>
             </div>
         </div>
     </div>
 </div>
 
+<!-- Recent Orders Section -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-history"></i> Recent Order History</h5>
+                <a href="{{ url_for('orders') }}" class="btn btn-outline-primary btn-sm">View All Orders</a>
+            </div>
+            <div class="card-body">
+                {% if recent_orders %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Order ID</th>
+                                <th>Package</th>
+                                <th>Status</th>
+                                <th>Cost</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for order in recent_orders %}
+                            <tr>
+                                <td><code>{{ order.id }}</code></td>
+                                <td>{{ order.package }}</td>
+                                <td>
+                                    {% if order.status == 'Completed' %}
+                                        <span class="badge bg-success">{{ order.status }}</span>
+                                    {% elif order.status == 'Rejected' %}
+                                        <span class="badge bg-danger">{{ order.status }}</span>
+                                    {% else %}
+                                        <span class="badge bg-warning">{{ order.status }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ "%.2f"|format(order.cost) }} C</td>
+                                <td>{{ order.date }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center text-muted">
+                    <i class="fas fa-shopping-cart fa-3x mb-3"></i>
+                    <p>No orders yet. Start shopping to see your order history!</p>
+                    <a href="{{ url_for('shop') }}" class="btn btn-primary">
+                        <i class="fas fa-shopping-cart"></i> Start Shopping
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
 <div class="card">
     <div class="card-header">
-        <h5><i class="fas fa-info-circle"></i> Quick Actions</h5>
+        <h5><i class="fas fa-bolt"></i> Quick Actions</h5>
     </div>
     <div class="card-body">
         <div class="row">
-            <div class="col-md-6 mb-3">
+            <div class="col-md-3 mb-3">
                 <div class="d-grid">
                     <a href="{{ url_for('shop') }}" class="btn btn-outline-primary">
-                        <i class="fas fa-mobile-alt"></i> Mobile Packages
+                        <i class="fas fa-mobile-alt"></i> Browse Products
                     </a>
                 </div>
             </div>
-            <div class="col-md-6 mb-3">
+            <div class="col-md-3 mb-3">
                 <div class="d-grid">
                     <a href="{{ url_for('credits') }}" class="btn btn-outline-warning">
-                        <i class="fas fa-credit-card"></i> Purchase Credits
+                        <i class="fas fa-credit-card"></i> Buy Credits
+                    </a>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="d-grid">
+                    <a href="{{ url_for('orders') }}" class="btn btn-outline-success">
+                        <i class="fas fa-list"></i> My Orders
+                    </a>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="d-grid">
+                    <a href="https://t.me/YourBotUsername" target="_blank" class="btn btn-outline-info">
+                        <i class="fab fa-telegram"></i> Telegram Bot
                     </a>
                 </div>
             </div>
