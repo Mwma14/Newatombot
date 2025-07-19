@@ -6,3 +6,15 @@ channel = "stable-24_05"
 
 [deployment]
 run = ["sh", "-c", "python bot.py"]
+
+[workflows]
+runButton = "Run Bot & Web"
+
+[[workflows.workflow]]
+name = "Run Bot & Web"
+author = 41216423
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python run_with_web.py"
