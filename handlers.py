@@ -11,7 +11,7 @@ from telegram.error import BadRequest
 import database as db
 import keyboards
 import config
-import translations
+import locale
 import middleware
 from products import calculate_credit_cost
 from config import logger
@@ -45,7 +45,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     logger.info(f"🚀 User {user.id} ({user.full_name}) executed /start or join check.")
     user_data = await db.get_user_data(user.id)
     lang = user_data.get('language', 'en')
-    text = translations.get_text('welcome', lang, name=html.escape(user.full_name), user_id=user.id, credits=user_data['credits'])
+    text = locale.get_text('welcome', lang, name=html.escape(user.full_name), user_id=user.id, credits=user_data['credits'])
     if update.callback_query: await update.callback_query.message.delete()
     await context.bot.send_message(
         chat_id=chat_id, text=text, 
@@ -62,7 +62,7 @@ async def show_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     logger.info(f"🔄 User {user.id} returned to main menu via button '{query.data}'.")
     user_data = await db.get_user_data(user.id)
     lang = user_data.get('language', 'en')
-    text = translations.get_text('welcome', lang, name=html.escape(user.full_name), user_id=user.id, credits=user_data['credits'])
+    text = locale.get_text('welcome', lang, name=html.escape(user.full_name), user_id=user.id, credits=user_data['credits'])
     try:
         await query.edit_message_text(text=text, reply_markup=keyboards.get_main_menu_keyboard(lang), parse_mode=ParseMode.MARKDOWN)
     except BadRequest as e:
@@ -90,7 +90,7 @@ async def universal_cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         await answer_query_safely(update.callback_query)
         await show_main_menu(update, context)
     else:
-        await update.message.reply_text(translations.get_text('operation_cancelled', lang))
+        await update.message.reply_text(locale.get_text('operation_cancelled', lang))
         await start(update, context)
     context.user_data.clear()
     return ConversationHandler.END
@@ -101,7 +101,7 @@ async def credits_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logger.info(f"💰 User {query.from_user.id} started credit purchase flow.")
     lang = await get_lang(context, query.from_user.id)
     await answer_query_safely(query)
-    await query.edit_message_text(text=translations.get_text('buy_credits_prompt', lang), reply_markup=keyboards.get_credit_packages_keyboard(lang), parse_mode=ParseMode.MARKDOWN)
+    await query.edit_message_text(text=locale.get_text('buy_credits_prompt', lang), reply_markup=keyboards.get_credit_packages_keyboard(lang), parse_mode=ParseMode.MARKDOWN)
     return SELECTING_CREDIT_OPTION
 
 async def credits_package_selected(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -110,7 +110,7 @@ async def credits_package_selected(update: Update, context: ContextTypes.DEFAULT
     await answer_query_safely(query)
     price = int(query.data.split('_')[2])
     context.user_data['price_mmk'] = price
-    text = translations.get_text('package_choice_prompt', lang, price=price)
+    text = locale.get_text('package_choice_prompt', lang, price=price)
     await query.edit_message_text(text=text, reply_markup=keyboards.get_payment_method_keyboard(price, lang), parse_mode=ParseMode.MARKDOWN)
     return SELECTING_PAYMENT
 
@@ -118,19 +118,19 @@ async def credits_manual_start(update: Update, context: ContextTypes.DEFAULT_TYP
     query = update.callback_query
     lang = await get_lang(context, query.from_user.id)
     await answer_query_safely(query)
-    await query.edit_message_text(translations.get_text('ask_manual_amount', lang), parse_mode=ParseMode.MARKDOWN)
+    await query.edit_message_text(locale.get_text('ask_manual_amount', lang), parse_mode=ParseMode.MARKDOWN)
     return AWAITING_MANUAL_AMOUNT
 
 async def credits_manual_amount_received(update: Update, context: ContextTypes.DEFAULT_TYPE):
     lang = await get_lang(context, update.effective_user.id)
     try:
         price = int(update.message.text)
-        if price < 500: await update.message.reply_text(translations.get_text('min_amount_prompt', lang)); return AWAITING_MANUAL_AMOUNT
+        if price < 500: await update.message.reply_text(locale.get_text('min_amount_prompt', lang)); return AWAITING_MANUAL_AMOUNT
         context.user_data['price_mmk'] = price
-        text = translations.get_text('manual_choice_prompt', lang, price=price)
+        text = locale.get_text('manual_choice_prompt', lang, price=price)
         await update.message.reply_text(text=text, reply_markup=keyboards.get_payment_method_keyboard(price, lang), parse_mode=ParseMode.MARKDOWN)
         return SELECTING_PAYMENT
-    except ValueError: await update.message.reply_text(translations.get_text('invalid_amount_prompt', lang)); return AWAITING_MANUAL_AMOUNT
+    except ValueError: await update.message.reply_text(locale.get_text('invalid_amount_prompt', lang)); return AWAITING_MANUAL_AMOUNT
 
 async def credits_payment_method_selected(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -148,7 +148,7 @@ async def credits_payment_method_selected(update: Update, context: ContextTypes.
         order_id=order_id, user_id=query.from_user.id, order_type='credit_purchase',
         package_name=f"{credit_amount:.2f} Credits", credit_cost=credit_amount,
         payment_method=payment_method, status='pending_payment')
-    text = translations.get_text('payment_instructions', lang, order_id=order_id, price=price, credits=credit_amount, number=payment_number, method=payment_method)
+    text = locale.get_text('payment_instructions', lang, order_id=order_id, price=price, credits=credit_amount, number=payment_number, method=payment_method)
     await query.edit_message_text(text, reply_markup=keyboards.get_cancel_flow_keyboard(lang), parse_mode=ParseMode.MARKDOWN)
     return AWAITING_SCREENSHOT
 
@@ -157,12 +157,12 @@ async def credits_screenshot_received(update: Update, context: ContextTypes.DEFA
     ud = context.user_data
     lang = await get_lang(context, user.id) 
     if not ud.get('order_id'):
-        await update.message.reply_text(translations.get_text('session_expired', lang)); await start(update, context); return ConversationHandler.END
+        await update.message.reply_text(locale.get_text('session_expired', lang)); await start(update, context); return ConversationHandler.END
     order_id = ud['order_id']
     logger.info(f"📸 User {user.id} submitted a screenshot for credit order {order_id}.")
     photo_id = update.message.photo[-1].file_id
     await db.update_order_status_and_screenshot(order_id, 'pending_approval', photo_id)
-    await update.message.reply_text(translations.get_text('payment_submitted', lang))
+    await update.message.reply_text(locale.get_text('payment_submitted', lang))
     user_username = f"(@{user.username})" if user.username else ""
     admin_caption = (f"🚨 <b>New Credit Payment</b> 🚨\n\n"
                      f"User: {html.escape(user.full_name)} {user_username}\n"
@@ -202,7 +202,7 @@ async def shop_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logger.info(f"🛍️ User {query.from_user.id} started browsing products.")
     lang = await get_lang(context, query.from_user.id)
     await answer_query_safely(query)
-    await query.edit_message_text(translations.get_text('select_operator', lang), reply_markup=await keyboards.get_operator_keyboard(lang), parse_mode=ParseMode.MARKDOWN)
+    await query.edit_message_text(locale.get_text('select_operator', lang), reply_markup=await keyboards.get_operator_keyboard(lang), parse_mode=ParseMode.MARKDOWN)
     return SHOP_OPERATOR
 
 async def shop_operator_selected(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -211,7 +211,7 @@ async def shop_operator_selected(update: Update, context: ContextTypes.DEFAULT_T
     await answer_query_safely(query)
     operator = query.data.split('_')[2]
     context.user_data['operator'] = operator
-    text = translations.get_text('select_category', lang, operator=operator)
+    text = locale.get_text('select_category', lang, operator=operator)
     await query.edit_message_text(text, reply_markup=await keyboards.get_category_keyboard(operator, lang), parse_mode=ParseMode.MARKDOWN)
     return SHOP_CATEGORY
 
@@ -227,10 +227,10 @@ async def shop_category_selected(update: Update, context: ContextTypes.DEFAULT_T
     context.user_data.update({'operator': operator, 'category': category})
     product_list = await get_products_from_cache(context, operator, category)
     if category == "Beautiful Numbers":
-        text = translations.get_text('beautiful_numbers_title', lang, operator=operator)
+        text = locale.get_text('beautiful_numbers_title', lang, operator=operator)
         markup = await keyboards.get_beautiful_numbers_keyboard(product_list, operator, lang, page)
     else:
-        text = translations.get_text('select_product', lang, operator=operator, category=category)
+        text = locale.get_text('select_product', lang, operator=operator, category=category)
         markup = await keyboards.get_product_keyboard(product_list, operator, category, lang, page)
     await query.edit_message_text(text, reply_markup=markup, parse_mode=ParseMode.MARKDOWN)
     return SHOP_PRODUCT_LIST
@@ -241,7 +241,7 @@ async def shop_cancel_to_category(update: Update, context: ContextTypes.DEFAULT_
     lang = await get_lang(context, query.from_user.id)
     operator = context.user_data.get('operator')
     if not operator: return await shop_start(update, context)
-    text = translations.get_text('select_category', lang, operator=operator)
+    text = locale.get_text('select_category', lang, operator=operator)
     await query.edit_message_text(text, reply_markup=await keyboards.get_category_keyboard(operator, lang), parse_mode=ParseMode.MARKDOWN)
     return SHOP_CATEGORY
 
@@ -263,7 +263,7 @@ async def shop_product_selected(update: Update, context: ContextTypes.DEFAULT_TY
         _, operator, _, name, price_mmk, _ = product_details
     credit_cost = calculate_credit_cost(price_mmk)
     context.user_data['product_selection'] = {'id': product_id, 'name': name, 'cost': credit_cost, 'is_bnum': is_bnum, 'operator': operator}
-    text = translations.get_text('confirm_purchase_title', lang, name=name, operator=operator, cost=credit_cost)
+    text = locale.get_text('confirm_purchase_title', lang, name=name, operator=operator, cost=credit_cost)
     await query.edit_message_text(text, reply_markup=keyboards.get_product_confirmation_keyboard(product_id_str, is_bnum, lang), parse_mode=ParseMode.MARKDOWN)
     return SHOP_CONFIRM
 
@@ -273,7 +273,7 @@ async def shop_beautiful_number_info(update: Update, context: ContextTypes.DEFAU
     lang = await get_lang(context, query.from_user.id)
     operator = context.user_data.get('operator')
     if not operator: return
-    instructions_text = translations.get_text('bnum_instructions_text', lang)
+    instructions_text = locale.get_text('bnum_instructions_text', lang)
     back_cb = f"shop_cat_{operator}_Beautiful_Numbers_1"
     await query.edit_message_text(
         text=instructions_text, parse_mode=None,
@@ -288,19 +288,19 @@ async def shop_confirm_purchase(update: Update, context: ContextTypes.DEFAULT_TY
     lang = await get_lang(context, user.id)
     selection = context.user_data.get('product_selection')
     if not selection:
-        await query.answer(translations.get_text('session_expired', lang), show_alert=True); await show_main_menu(update, context); return ConversationHandler.END
+        await query.answer(locale.get_text('session_expired', lang), show_alert=True); await show_main_menu(update, context); return ConversationHandler.END
     logger.info(f"🛒 User {user.id} is attempting to purchase '{selection['name']}' for {selection['cost']} credits.")
     user_data = await db.get_user_data(user.id)
     if user_data['credits'] < selection['cost']:
-        await query.answer(translations.get_text('insufficient_credits', lang), show_alert=True)
-        text = translations.get_text('credit_low_prompt', lang, needed=selection['cost'], has=user_data['credits'])
+        await query.answer(locale.get_text('insufficient_credits', lang), show_alert=True)
+        text = locale.get_text('credit_low_prompt', lang, needed=selection['cost'], has=user_data['credits'])
         await query.edit_message_text(text, reply_markup=keyboards.get_main_menu_keyboard(lang), parse_mode=ParseMode.MARKDOWN)
         return ConversationHandler.END
     if selection['is_bnum']:
-        delivery_info = translations.get_text('delivery_bnum', lang)
+        delivery_info = locale.get_text('delivery_bnum', lang)
         return await finalize_order(update, context, delivery_info=delivery_info)
     else:
-        text = translations.get_text('ask_phone_number', lang, name=selection['name'], cost=selection['cost'])
+        text = locale.get_text('ask_phone_number', lang, name=selection['name'], cost=selection['cost'])
         await query.edit_message_text(text, parse_mode=ParseMode.MARKDOWN)
         return AWAITING_PHONE_NUMBER
 
@@ -308,7 +308,7 @@ async def shop_phone_number_received(update: Update, context: ContextTypes.DEFAU
     phone_number = update.message.text
     if not phone_number.isdigit() or len(phone_number) < 7:
         lang = await get_lang(context, update.effective_user.id)
-        await update.message.reply_text(translations.get_text('invalid_amount_prompt', lang))
+        await update.message.reply_text(locale.get_text('invalid_amount_prompt', lang))
         return AWAITING_PHONE_NUMBER
     return await finalize_order(update, context, delivery_info=phone_number)
 
@@ -317,7 +317,7 @@ async def finalize_order(update: Update, context: ContextTypes.DEFAULT_TYPE, del
     lang = await get_lang(context, user.id)
     selection = context.user_data.get('product_selection')
     if not selection:
-        await context.bot.send_message(user.id, translations.get_text('session_expired', lang)); await start(update, context); return ConversationHandler.END
+        await context.bot.send_message(user.id, locale.get_text('session_expired', lang)); await start(update, context); return ConversationHandler.END
     order_id = generate_order_id("PROD")
     logger.info(f"✅ User {user.id} finalized order {order_id} for '{selection['name']}'. Credits deducted: {selection['cost']}.")
     await db.change_user_credits(user.id, -selection['cost'])
@@ -325,8 +325,8 @@ async def finalize_order(update: Update, context: ContextTypes.DEFAULT_TYPE, del
         order_id=order_id, user_id=user.id, order_type='product_purchase',
         package_name=selection['name'], credit_cost=selection['cost'],
         status='pending_approval', delivery_info=delivery_info)
-    delivery_text = translations.get_text('delivery_to_phone', lang, phone=delivery_info) if not selection['is_bnum'] else delivery_info
-    user_msg_text = translations.get_text('order_submitted', lang, order_id=order_id, name=selection['name'], cost=selection['cost'], delivery_info=delivery_text)
+    delivery_text = locale.get_text('delivery_to_phone', lang, phone=delivery_info) if not selection['is_bnum'] else delivery_info
+    user_msg_text = locale.get_text('order_submitted', lang, order_id=order_id, name=selection['name'], cost=selection['cost'], delivery_info=delivery_text)
     if update.callback_query: await update.callback_query.edit_message_text(user_msg_text, parse_mode=ParseMode.MARKDOWN)
     else: await update.message.reply_text(user_msg_text, parse_mode=ParseMode.MARKDOWN)
     await start(update, context)
@@ -366,7 +366,7 @@ async def my_orders_start(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         context.user_data['my_orders_cache'] = pending + history
     all_orders = context.user_data['my_orders_cache']
     paginated_orders, total_pages, current_page = keyboards.paginate(all_orders, page, page_size=5)
-    text = translations.get_text('my_orders_title', lang)
+    text = locale.get_text('my_orders_title', lang)
     if paginated_orders:
         for o_id, pkg, status, ts_str, cost in paginated_orders:
             emoji = '⏳'
@@ -374,9 +374,9 @@ async def my_orders_start(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             elif status == 'rejected': emoji = '❌'
             date_obj = datetime.fromisoformat(ts_str)
             date_formatted = date_obj.strftime('%b %d, %H:%M')
-            text += emoji + " " + translations.get_text('order_line', lang, order_id=o_id, pkg=pkg, status=status.replace("_", " ").title(), cost=cost, date=date_formatted)
+            text += emoji + " " + locale.get_text('order_line', lang, order_id=o_id, pkg=pkg, status=status.replace("_", " ").title(), cost=cost, date=date_formatted)
     else:
-        text += translations.get_text('no_orders', lang)
+        text += locale.get_text('no_orders', lang)
     markup = keyboards.get_my_orders_keyboard(paginated_orders, total_pages, current_page, lang)
     await query.edit_message_text(text, reply_markup=markup, parse_mode=ParseMode.MARKDOWN)
     return VIEWING_ORDERS
