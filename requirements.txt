@@ -1,5 +1,5 @@
 
 aiosqlite
 colorlog
-telegram
+python-telegram-bot
 flask
