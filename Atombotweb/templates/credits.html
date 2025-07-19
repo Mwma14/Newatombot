@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block title %}Buy Credits - Atom Bot{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2"><i class="fas fa-coins"></i> Buy Credits</h1>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card mb-4">
+            <div class="card-header">Select a Package</div>
+            <div class="card-body">
+                <div class="row">
+                    {% for package in packages %}
+                    <div class="col-md-4 mb-3">
+                        <div class="card h-100 text-center">
+                            <div class="card-body d-flex flex-column">
+                                <i class="fas fa-gift fa-2x text-primary mb-2"></i><h5>{{ package.credits }} Credits</h5>
+                                <h6 class="text-muted">{{ "{:,}".format(package.price) }} MMK</h6>
+                                <button class="btn btn-primary mt-auto buy-credit-btn" data-price="{{ package.price }}">Request</button>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header">Or Enter a Custom Amount</div>
+            <div class="card-body">
+                <div class="row g-2 align-items-end">
+                    <div class="col-sm-5"><label for="customAmount" class="form-label">Amount in MMK</label><input type="number" class="form-control" id="customAmount" placeholder="Min: 500" min="500"></div>
+                    <div class="col-sm-4"><label class="form-label">You Will Get</label><p id="creditsCalculated" class="form-control-plaintext ps-2">0.00 Credits</p></div>
+                    <div class="col-sm-3"><button class="btn btn-primary w-100" id="custom-buy-btn">Request</button></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header"><i class="fas fa-credit-card"></i> Payment Methods</div>
+            <div class="card-body">
+                <p>After requesting a purchase, please send the exact amount to one of the following accounts:</p>
+                <ul class="list-group list-group-flush">
+                {% for method in payment_methods %}<li class="list-group-item bg-transparent d-flex justify-content-between align-items-center">{{ method.name }} <span><code>{{ method.number }}</code></span></li>{% endfor %}
+                </ul>
+                <p class="mt-3 small text-muted">Remember to contact an admin with your <strong>Order ID</strong> after you have made the payment to receive your credits.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="creditPurchaseModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">Confirm Credit Request</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <p id="modal-credit-info"></p>
+                <div id="modal-credit-alert" class="alert alert-danger" style="display: none;"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="confirm-credit-purchase-btn"><span class="spinner-border spinner-border-sm" style="display: none;"></span> Confirm Request</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const creditPurchaseModal = new bootstrap.Modal(document.getElementById('creditPurchaseModal'));
+    const CREDIT_RATE = {{ config.CREDIT_PER_MMK }};
+    let priceToBuy = 0;
+    function updateCreditCalculation() {
+        const amount = parseFloat(document.getElementById('customAmount').value) || 0;
+        document.getElementById('creditsCalculated').textContent = `${(amount * CREDIT_RATE).toFixed(2)} Credits`;
+    }
+    document.getElementById('customAmount').addEventListener('input', updateCreditCalculation);
+    function triggerPurchase(price) {
+        priceToBuy = parseInt(price);
+        if (isNaN(priceToBuy) || priceToBuy < 500) { alert('Minimum purchase amount is 500 MMK.'); return; }
+        const credits = (priceToBuy * CREDIT_RATE).toFixed(2);
+        document.getElementById('modal-credit-info').innerHTML = `You are requesting to buy <strong>${credits} credits</strong> for <strong>${priceToBuy.toLocaleString()} MMK</strong>. Please confirm to log your request.`;
+        document.getElementById('modal-credit-alert').style.display = 'none';
+        creditPurchaseModal.show();
+    }
+    document.querySelectorAll('.buy-credit-btn').forEach(btn => btn.addEventListener('click', () => triggerPurchase(btn.dataset.price)));
+    document.getElementById('custom-buy-btn').addEventListener('click', () => triggerPurchase(document.getElementById('customAmount').value));
+    document.getElementById('confirm-credit-purchase-btn').addEventListener('click', async function() {
+        const confirmBtn = this;
+        const spinner = confirmBtn.querySelector('.spinner-border');
+        const alertBox = document.getElementById('modal-credit-alert');
+        spinner.style.display = 'inline-block';
+        confirmBtn.disabled = true;
+        try {
+            const response = await fetch('/purchase_credits', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ price: priceToBuy }) });
+            const result = await response.json();
+            if (result.success) {
+                creditPurchaseModal.hide();
+                alert(result.message);
+                window.location.href = "{{ url_for('orders') }}";
+            } else {
+                alertBox.textContent = result.error;
+                alertBox.style.display = 'block';
+            }
+        } catch (error) {
+            alertBox.textContent = 'A network error occurred.';
+            alertBox.style.display = 'block';
+        } finally {
+            spinner.style.display = 'none';
+            confirmBtn.disabled = false;
+        }
+    });
+});
+</script>
+{% endblock %}

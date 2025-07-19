@@ -1,0 +1,146 @@
+
+{% extends "base.html" %}
+
+{% block title %}Admin Panel - Atom Bot{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-crown"></i> Admin Panel</h2>
+    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Back to Dashboard
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-list fa-3x text-primary mb-3"></i>
+                <h5>All Orders</h5>
+                <p>View and manage all user orders</p>
+                <a href="{{ url_for('admin_orders') }}" class="btn btn-primary">
+                    <i class="fas fa-eye"></i> View Orders
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-users fa-3x text-success mb-3"></i>
+                <h5>User Management</h5>
+                <p>Manage users and their accounts</p>
+                <a href="{{ url_for('admin_users') }}" class="btn btn-success">
+                    <i class="fas fa-user-cog"></i> Manage Users
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-box fa-3x text-warning mb-3"></i>
+                <h5>Product Management</h5>
+                <p>View and manage all products</p>
+                <a href="{{ url_for('admin_products') }}" class="btn btn-warning">
+                    <i class="fas fa-cog"></i> Manage Products
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h5><i class="fas fa-info-circle"></i> Admin Notes</h5>
+    </div>
+    <div class="card-body">
+        <div class="alert alert-warning">
+            <i class="fas fa-exclamation-triangle"></i>
+            <strong>Limited Functionality:</strong> 
+            This web interface provides read-only access to most admin features. 
+            For full admin functionality including order approval, user management, and broadcasts, 
+            please use the Telegram bot interface.
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% extends "base.html" %}
+
+{% block title %}Admin Panel - Atom Bot{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-crown"></i> Admin Panel</h2>
+    <span class="badge bg-danger fs-6">Admin Access</span>
+</div>
+
+<div class="row">
+    <div class="col-md-4 mb-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-list fa-3x text-primary mb-3"></i>
+                <h4>All Orders</h4>
+                <p class="text-muted">View and manage all user orders</p>
+                <a href="{{ url_for('admin_orders') }}" class="btn btn-primary">
+                    <i class="fas fa-eye"></i> View Orders
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-users fa-3x text-success mb-3"></i>
+                <h4>User Management</h4>
+                <p class="text-muted">Manage user accounts and credits</p>
+                <a href="{{ url_for('admin_users') }}" class="btn btn-success">
+                    <i class="fas fa-user-cog"></i> Manage Users
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-box fa-3x text-warning mb-3"></i>
+                <h4>Products</h4>
+                <p class="text-muted">Manage products and inventory</p>
+                <a href="{{ url_for('admin_products') }}" class="btn btn-warning">
+                    <i class="fas fa-cog"></i> Manage Products
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h5><i class="fas fa-chart-bar"></i> Quick Stats</h5>
+    </div>
+    <div class="card-body">
+        <div class="row text-center">
+            <div class="col-md-3">
+                <h3 class="text-primary">--</h3>
+                <p>Total Users</p>
+            </div>
+            <div class="col-md-3">
+                <h3 class="text-success">--</h3>
+                <p>Active Orders</p>
+            </div>
+            <div class="col-md-3">
+                <h3 class="text-warning">--</h3>
+                <p>Total Products</p>
+            </div>
+            <div class="col-md-3">
+                <h3 class="text-info">--</h3>
+                <p>Revenue (MMK)</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

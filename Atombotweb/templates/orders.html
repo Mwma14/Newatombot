@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}My Orders - Atom Bot{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2"><i class="fas fa-history"></i> Order History</h1>
+</div>
+
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="btn-group w-100" role="group">
+            <button type="button" class="btn btn-outline-primary active" data-filter="all">All</button>
+            <button type="button" class="btn btn-outline-warning" data-filter="pending">Pending</button>
+            <button type="button" class="btn btn-outline-success" data-filter="completed">Completed</button>
+            <button type="button" class="btn btn-outline-danger" data-filter="rejected">Rejected</button>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center"><span>Your Orders</span><span class="badge bg-primary">Total: {{ (pending_orders + completed_orders)|length }}</span></div>
+    <div class="card-body p-0">
+        {% if pending_orders or completed_orders %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead><tr><th>Order ID</th><th>Type</th><th>Details</th><th>Cost</th><th>Status</th><th>Date</th></tr></thead>
+                <tbody id="orders-table-body">
+                    {% for order in pending_orders %}
+                    <tr class="order-row" data-status="pending">
+                        <td><code>{{ order.id }}</code></td>
+                        <td><span class="badge text-bg-info">{{ order.type }}</span></td>
+                        <td>{{ order.package }}</td>
+                        <td>{{ "%.2f"|format(order.cost) }} C</td>
+                        <td><span class="badge text-bg-warning">{{ order.status }}</span></td>
+                        <td>{{ order.date }}</td>
+                    </tr>
+                    {% endfor %}
+                    {% for order in completed_orders %}
+                    <tr class="order-row" data-status="{{ order.status|lower }}">
+                        <td><code>{{ order.id }}</code></td>
+                        <td><span class="badge text-bg-secondary">{{ order.type }}</span></td>
+                        <td>{{ order.package }}</td>
+                        <td>{{ "%.2f"|format(order.cost) }} C</td>
+                        <td>
+                             {% if order.status == 'Completed' %}<span class="badge text-bg-success">{{ order.status }}</span>
+                             {% elif order.status == 'Rejected' %}<span class="badge text-bg-danger">{{ order.status }}</span>
+                             {% else %}<span class="badge text-bg-secondary">{{ order.status }}</span>
+                             {% endif %}
+                        </td>
+                        <td>{{ order.date }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center p-4"><p class="text-muted">You have no orders to display.</p></div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const filterButtons = document.querySelectorAll('.btn-group .btn');
+    const orderRows = document.querySelectorAll('.order-row');
+    filterButtons.forEach(button => {
+        button.addEventListener('click', function () {
+            filterButtons.forEach(btn => btn.classList.remove('active'));
+            this.classList.add('active');
+            const filter = this.dataset.filter;
+            orderRows.forEach(row => {
+                if (filter === 'all' || row.dataset.status.includes(filter)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+    });
+});
+</script>
+{% endblock %}

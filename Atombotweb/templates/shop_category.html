@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block title %}{{ category }} - {{ operator }} - Atom Bot{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2"><i class="fas fa-list"></i> {{ operator }} - {{ category }}</h1>
+    <a href="{{ url_for('shop') }}" class="btn btn-sm btn-outline-secondary"><i class="fas fa-arrow-left"></i> Back to Shop</a>
+</div>
+
+<div class="row">
+    {% for product in products %}
+    <div class="col-lg-4 col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-body d-flex flex-column">
+                <h5 class="card-title">
+                    {% if product.type == 'bnum' %}<i class="fas fa-gem text-info"></i>{% else %}<i class="fas fa-box"></i>{% endif %}
+                    {{ product.name }}
+                </h5>
+                {% if product.extra %}<p class="card-text text-muted small">{{ product.extra|safe }}</p>{% endif %}
+                <div class="mt-auto pt-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="h5 text-primary">{{ "%.2f"|format(product.credits) }} C</span>
+                            <small class="d-block text-muted">{{ "{:,}".format(product.price) }} MMK</small>
+                        </div>
+                        <button class="btn btn-primary buy-btn" data-id="{{ product.id }}" data-type="{{ product.type }}" data-name="{{ product.name }}" data-credits="{{ product.credits }}"><i class="fas fa-shopping-cart"></i> Buy</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% if not products %}
+<div class="alert alert-info">There are currently no products in this category.</div>
+{% endif %}
+
+<div class="modal fade" id="purchaseModal" tabindex="-1" aria-labelledby="purchaseModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title" id="purchaseModalLabel">Confirm Purchase</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <div id="modal-product-info" class="mb-3"></div>
+                <div id="modal-phone-div" class="mb-3" style="display: none;">
+                    <label for="modal-phone-number" class="form-label">Phone Number for Delivery</label>
+                    <input type="tel" class="form-control" id="modal-phone-number" placeholder="e.g., 09123456789">
+                </div>
+                <div id="modal-alert" class="alert alert-danger" style="display: none;"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="confirm-purchase-btn"><span class="spinner-border spinner-border-sm" style="display: none;"></span> Confirm</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const purchaseModal = new bootstrap.Modal(document.getElementById('purchaseModal'));
+    let currentProduct = {};
+    document.querySelectorAll('.buy-btn').forEach(button => {
+        button.addEventListener('click', function () {
+            currentProduct = { id: this.dataset.id, type: this.dataset.type, name: this.dataset.name, credits: this.dataset.credits };
+            document.getElementById('modal-product-info').innerHTML = `<p>Buy <strong>${currentProduct.name}</strong> for <strong class="text-primary">${parseFloat(currentProduct.credits).toFixed(2)} C</strong>?</p>`;
+            document.getElementById('modal-phone-div').style.display = (currentProduct.type === 'product') ? 'block' : 'none';
+            document.getElementById('modal-phone-number').value = '';
+            document.getElementById('modal-alert').style.display = 'none';
+            document.querySelector('#confirm-purchase-btn .spinner-border').style.display = 'none';
+            purchaseModal.show();
+        });
+    });
+    document.getElementById('confirm-purchase-btn').addEventListener('click', async function () {
+        const confirmBtn = this;
+        const spinner = confirmBtn.querySelector('.spinner-border');
+        const alertBox = document.getElementById('modal-alert');
+        alertBox.style.display = 'none';
+        const payload = { product_id: currentProduct.id, product_type: currentProduct.type };
+        if (currentProduct.type === 'product') {
+            const phoneNumber = document.getElementById('modal-phone-number').value;
+            if (!phoneNumber || !/^\d{7,15}$/.test(phoneNumber)) {
+                alertBox.textContent = 'Please enter a valid phone number.';
+                alertBox.style.display = 'block';
+                return;
+            }
+            payload.phone_number = phoneNumber;
+        }
+        spinner.style.display = 'inline-block';
+        confirmBtn.disabled = true;
+        try {
+            const response = await fetch('/purchase', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            const result = await response.json();
+            if (result.success) {
+                alert(result.message);
+                purchaseModal.hide();
+                window.location.href = "{{ url_for('orders') }}";
+            } else {
+                alertBox.textContent = result.error || 'An unknown error occurred.';
+                alertBox.style.display = 'block';
+            }
+        } catch (error) {
+            alertBox.textContent = 'Network error. Please try again.';
+            alertBox.style.display = 'block';
+        } finally {
+            spinner.style.display = 'none';
+            confirmBtn.disabled = false;
+        }
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,41 @@
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://172.31.128.59:5000
+2025-07-19 08:55:17,206 - INFO     - [_internal.py:97] - Press CTRL+C to quit
+2025-07-19 08:55:17,207 - INFO     - [_internal.py:97] -  * Restarting with stat
+2025-07-19 08:55:17,686 - WARNING  - [_internal.py:97] -  * Debugger is active!
+2025-07-19 08:55:17,687 - INFO     - [_internal.py:97] -  * Debugger PIN: 115-390-282
+2025-07-19 08:55:17,814 - INFO     - [_internal.py:97] - 172.31.128.59 - - [19/Jul/2025 08:55:17] "GET / HTTP/1.1" 302 -
+2025-07-19 08:55:17,953 - INFO     - [_internal.py:97] - 172.31.128.59 - - [19/Jul/2025 08:55:17] "GET /dashboard HTTP/1.1" 200 -
+2025-07-19 08:55:24,457 - INFO     - [_internal.py:97] - 172.31.128.59 - - [19/Jul/2025 08:55:24] "GET /dashboard HTTP/1.1" 200 -
+2025-07-19 08:55:34,417 - INFO     - [_internal.py:97] - 172.31.128.59 - - [19/Jul/2025 08:55:34] "GET / HTTP/1.1" 302 -
+2025-07-19 08:55:34,816 - INFO     - [_internal.py:97] - 172.31.128.59 - - [19/Jul/2025 08:55:34] "GET /login HTTP/1.1" 200 -
+2025-07-19 08:55:39,260 - INFO     - [_internal.py:97] - 172.31.128.59 - - [19/Jul/2025 08:55:39] "GET /logout HTTP/1.1" 302 -
+2025-07-19 08:55:39,367 - INFO     - [_internal.py:97] - 172.31.128.59 - - [19/Jul/2025 08:55:39] "GET / HTTP/1.1" 302 -
+2025-07-19 08:55:39,474 - INFO     - [_internal.py:97] - 172.31.128.59 - - [19/Jul/2025 08:55:39] "GET /login HTTP/1.1" 200 -
+2025-07-19 08:55:46,802 - INFO     - [_internal.py:97] - 172.31.128.59 - - [19/Jul/2025 08:55:46] "POST /login HTTP/1.1" 302 -
+2025-07-19 08:55:46,914 - INFO     - [_internal.py:97] - 172.31.128.59 - - [19/Jul/2025 08:55:46] "GET /dashboard HTTP/1.1" 200 -
+2025-07-19 08:55:52,087 - INFO     - [_internal.py:97] - 172.31.128.59 - - [19/Jul/2025 08:55:52] "GET /orders HTTP/1.1" 200 -
+2025-07-19 08:55:58,010 - INFO     - [_internal.py:97] - 172.31.128.59 - - [19/Jul/2025 08:55:58] "GET /credits HTTP/1.1" 200 -
+2025-07-19 08:56:01,629 - INFO     - [_internal.py:97] - 172.31.128.59 - - [19/Jul/2025 08:56:01] "GET /shop HTTP/1.1" 200 -
+2025-07-19 08:56:04,510 - INFO     - [_internal.py:97] - 172.31.128.59 - - [19/Jul/2025 08:56:04] "GET /dashboard HTTP/1.1" 200 -
+^CTraceback (most recent call last):
+  File "/home/runner/workspace/run_with_web.py", line 24, in <module>
+    run_web()
+  File "/home/runner/workspace/run_with_web.py", line 16, in run_web
+    subprocess.run([sys.executable, "web_app.py"])
+  File "/nix/store/nb21sc3npfc8gvazwnrjxpvb5d48jysx-python3-3.12.7/lib/python3.12/subprocess.py", line 550, in run
+    stdout, stderr = process.communicate(input, timeout=timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/nix/store/nb21sc3npfc8gvazwnrjxpvb5d48jysx-python3-3.12.7/lib/python3.12/subprocess.py", line 1201, in communicate
+    self.wait()
+  File "/nix/store/nb21sc3npfc8gvazwnrjxpvb5d48jysx-python3-3.12.7/lib/python3.12/subprocess.py", line 1264, in wait
+    return self._wait(timeout=timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/nix/store/nb21sc3npfc8gvazwnrjxpvb5d48jysx-python3-3.12.7/lib/python3.12/subprocess.py", line 2053, in _wait
+    (pid, sts) = self._try_wait(0)
+                 ^^^^^^^^^^^^^^^^^
+  File "/nix/store/nb21sc3npfc8gvazwnrjxpvb5d48jysx-python3-3.12.7/lib/python3.12/subprocess.py", line 2011, in _try_wait
+    (pid, sts) = os.waitpid(self.pid, wait_flags)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt
