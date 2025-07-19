@@ -278,6 +278,30 @@ def admin_products():
     
     return render_template('admin_products.html', products=formatted_products)
 
+@app.route('/dashboard')
+def dashboard():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    return render_template('dashboard.html')
+
+@app.route('/shop')
+def shop():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    return render_template('shop.html')
+
+@app.route('/credits')
+def credits():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    return render_template('credits.html')
+
+@app.route('/orders')
+def orders():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    return render_template('orders.html')
+
 @app.route('/logout')
 def logout():
     session.clear()
