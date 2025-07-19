@@ -3,7 +3,7 @@ import math
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 import database as db
 import config
-import locale
+import translations
 import ui_config
 from products import calculate_credit_cost
 
@@ -37,19 +37,19 @@ def get_pagination_controls(current_page: int, total_pages: int, callback_prefix
 # --- Navigation Keyboards ---
 def get_main_menu_keyboard(lang: str = 'en') -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton(locale.get_text('main_menu_button_browse', lang), callback_data='shop_main')],
-        [InlineKeyboardButton(locale.get_text('main_menu_button_buy_credits', lang), callback_data='credits_buy_start')],
+        [InlineKeyboardButton(translations.get_text('main_menu_button_browse', lang), callback_data='shop_main')],
+        [InlineKeyboardButton(translations.get_text('main_menu_button_buy_credits', lang), callback_data='credits_buy_start')],
         [
-            InlineKeyboardButton(locale.get_text('main_menu_button_orders', lang), callback_data='orders_view_1'),
-            InlineKeyboardButton(locale.get_text('main_menu_button_refresh', lang), callback_data='main_menu_refresh')
+            InlineKeyboardButton(translations.get_text('main_menu_button_orders', lang), callback_data='orders_view_1'),
+            InlineKeyboardButton(translations.get_text('main_menu_button_refresh', lang), callback_data='main_menu_refresh')
         ],
-        [InlineKeyboardButton(locale.get_text('main_menu_button_language', lang), callback_data='change_lang')]
+        [InlineKeyboardButton(translations.get_text('main_menu_button_language', lang), callback_data='change_lang')]
     ])
 
 # === DEFINITIVE FIX: back_button ALWAYS returns a single button object ===
 def back_button(callback_data: str, lang: str = 'en') -> InlineKeyboardButton:
     """Returns a single InlineKeyboardButton, not a list."""
-    return InlineKeyboardButton(f"⬅️ {locale.get_text('back_button', lang)}", callback_data=callback_data)
+    return InlineKeyboardButton(f"⬅️ {translations.get_text('back_button', lang)}", callback_data=callback_data)
 
 # --- My Orders Paginated Keyboard ---
 def get_my_orders_keyboard(paginated_orders: list, total_pages: int, current_page: int, lang: str) -> InlineKeyboardMarkup:
@@ -114,7 +114,7 @@ async def get_product_keyboard(product_list: list, operator: str, category: str,
 
 async def get_beautiful_numbers_keyboard(number_list: list, operator: str, lang: str = 'en', page: int = 1) -> InlineKeyboardMarkup:
     paginated_numbers, total_pages, current_page = paginate(number_list, page)
-    keyboard = [[InlineKeyboardButton(locale.get_text('bnum_instructions_button', lang), callback_data="shop_bnum_info")]]
+    keyboard = [[InlineKeyboardButton(translations.get_text('bnum_instructions_button', lang), callback_data="shop_bnum_info")]]
     for bnum_id, phone, price in paginated_numbers:
         credits = calculate_credit_cost(price)
         button_text = f"📞 {phone} - {credits:.2f} C"
@@ -127,8 +127,8 @@ async def get_beautiful_numbers_keyboard(number_list: list, operator: str, lang:
 def get_product_confirmation_keyboard(product_id: str, is_bnum: bool = False, lang: str = 'en') -> InlineKeyboardMarkup:
     prefix = "bnum" if is_bnum else "prod"
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton(f"✅ {locale.get_text('proceed_prompt', lang)}", callback_data=f"buy_confirm_{prefix}_{product_id}")],
-        [InlineKeyboardButton(locale.get_text('cancel_button', lang), callback_data=f"buy_cancel_{prefix}_{product_id}")]
+        [InlineKeyboardButton(f"✅ {translations.get_text('proceed_prompt', lang)}", callback_data=f"buy_confirm_{prefix}_{product_id}")],
+        [InlineKeyboardButton(translations.get_text('cancel_button', lang), callback_data=f"buy_cancel_{prefix}_{product_id}")]
     ])
 
 # --- Credit Purchase Keyboards ---
@@ -136,7 +136,7 @@ def get_credit_packages_keyboard(lang: str = 'en') -> InlineKeyboardMarkup:
     keyboard = []
     for pkg in config.CREDIT_PACKAGES:
         keyboard.append([InlineKeyboardButton(f"{pkg['credits']} Credits - {pkg['price']:,} MMK", callback_data=f"credits_pkg_{pkg['price']}")])
-    keyboard.append([InlineKeyboardButton(locale.get_text('manual_amount_button', lang), callback_data="credits_manual")])
+    keyboard.append([InlineKeyboardButton(translations.get_text('manual_amount_button', lang), callback_data="credits_manual")])
     keyboard.append([back_button('main_menu', lang)])
     return InlineKeyboardMarkup(keyboard)
 
