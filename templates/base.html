@@ -58,7 +58,7 @@
                             <i class="fas fa-list"></i> My Orders
                         </a>
                     </li>
-                    {% if session.user_id in config.ADMIN_IDS %}
+                    {% if session.user_id and session.user_id in [123456789] %}
                     <li class="nav-item mb-2">
                         <a href="{{ url_for('admin') }}" class="nav-link text-white">
                             <i class="fas fa-crown"></i> Admin Panel

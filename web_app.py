@@ -13,6 +13,11 @@ import html
 app = Flask(__name__)
 app.secret_key = 'your-secret-key-change-this'
 
+# Make config available in templates
+@app.context_processor
+def inject_config():
+    return dict(config=config)
+
 # Store active bot context for web requests
 web_context = {}
 
@@ -229,8 +234,11 @@ def admin():
 
 @app.route('/admin/orders')
 def admin_orders():
-    if 'user_id' not in session or session['user_id'] not in config.ADMIN_IDS:
+    if 'user_id' not in session:
         return redirect(url_for('login'))
+    
+    if session['user_id'] not in config.ADMIN_IDS:
+        return redirect(url_for('dashboard'))
     
     all_orders = run_async(db.admin_get_all_orders())
     
@@ -251,8 +259,11 @@ def admin_orders():
 
 @app.route('/admin/users')
 def admin_users():
-    if 'user_id' not in session or session['user_id'] not in config.ADMIN_IDS:
+    if 'user_id' not in session:
         return redirect(url_for('login'))
+    
+    if session['user_id'] not in config.ADMIN_IDS:
+        return redirect(url_for('dashboard'))
     
     # Get all user IDs and their basic info
     user_ids = run_async(db.admin_get_all_user_ids())
@@ -270,8 +281,11 @@ def admin_users():
 
 @app.route('/admin/products')
 def admin_products():
-    if 'user_id' not in session or session['user_id'] not in config.ADMIN_IDS:
+    if 'user_id' not in session:
         return redirect(url_for('login'))
+    
+    if session['user_id'] not in config.ADMIN_IDS:
+        return redirect(url_for('dashboard'))
     
     all_products = run_async(db.admin_get_all_products())
     
