@@ -117,7 +117,11 @@ async def view_all_orders(update: Update, context: ContextTypes.DEFAULT_TYPE):
     message_text = f"📊 **All User Orders (Page {current_page}/{total_pages})** 📊\n\n"
     for o_id, u_id, pkg, cost, status, ts in paginated_orders:
         ts_formatted = datetime.fromisoformat(ts).strftime('%y-%m-%d %H:%M')
-        message_text += f"`{o_id}`\n👤`{u_id}` | `{pkg}`\n💰{cost:.2f} C | {status} | _{ts_formatted}_\n\n"
+        # Escape any special characters that might break Markdown
+        safe_o_id = html.escape(str(o_id))
+        safe_pkg = html.escape(str(pkg))
+        safe_status = html.escape(str(status))
+        message_text += f"`{safe_o_id}`\n👤`{u_id}` | `{safe_pkg}`\n💰{cost:.2f} C | {safe_status} | _{ts_formatted}_\n\n"
     keyboard_rows = keyboards.get_pagination_controls(current_page, total_pages, "admin_view_orders")
     keyboard_rows.append([keyboards.back_button("admin_panel")])
     await query.edit_message_text(message_text, parse_mode=ParseMode.MARKDOWN, reply_markup=InlineKeyboardMarkup(keyboard_rows))
