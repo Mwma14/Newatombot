@@ -133,7 +133,11 @@ $('#confirmPurchase').click(function() {
                 $('#purchaseModal').modal('hide');
                 location.reload();
             } else {
-                alert('Error: ' + response.error);
+                let errorMsg = response.error;
+                if (response.show_admin) {
+                    errorMsg += '\n\nAdmin Telegram: ' + response.admin_telegram + '\nAdmin Viber: ' + response.admin_viber;
+                }
+                alert(errorMsg);
             }
         },
         error: function() {

@@ -237,7 +237,13 @@ def purchase():
         credit_cost = calculate_credit_cost(price_mmk)
         
         if user_data['credits'] < credit_cost:
-            return jsonify({'success': False, 'error': 'Insufficient credits'})
+            return jsonify({
+                'success': False, 
+                'error': 'Your Credit Points Balance is not enough. Please Buy Credit Points Via Telegram Bot.',
+                'show_admin': True,
+                'admin_telegram': '@CEO_METAVERSE',
+                'admin_viber': '09883249943'
+            })
         
         # Generate order ID
         import random
